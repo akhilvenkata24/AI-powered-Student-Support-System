@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MessageSquare, FileText, HeartPulse, BarChart2, ArrowRight, Sparkles, Zap, Shield } from 'lucide-react';
+import { MessageSquare, FileText, HeartPulse, BarChart2, ArrowRight, Sparkles, Zap, Shield, Video } from 'lucide-react';
 
 const pillars = [
     {
@@ -28,12 +28,12 @@ const pillars = [
         path: '/mental-health',
     },
     {
-        icon: BarChart2,
+        icon: Video,
         color: 'from-emerald-500 to-teal-400',
         glow: 'rgba(16,185,129,0.4)',
-        title: 'Admin Panel',
-        desc: 'Manage queries, FAQs and view real-time chatbot analytics.',
-        path: '/admin',
+        title: 'Virtual Counselling',
+        desc: 'Schedule and join virtual counseling sessions from anywhere.',
+        path: '/virtual-counselor',
     },
 ];
 

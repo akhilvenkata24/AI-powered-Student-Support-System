@@ -56,8 +56,8 @@ const Navbar = () => {
                                 </Link>
                             );
                         })}
-                        <Link to="/chat" className="ml-3 btn-primary text-sm py-2 px-5">
-                            Get Help Now
+                        <Link to="/virtual-counselor" className="ml-3 btn-primary text-sm py-2 px-5">
+                            Virtual Counselling
                         </Link>
                     </div>
 

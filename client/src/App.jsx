@@ -5,6 +5,7 @@ import ChatBot from './pages/ChatBot';
 import Admissions from './pages/Admissions';
 import MentalHealth from './pages/MentalHealth';
 import AdminDashboard from './pages/AdminDashboard';
+import VirtualCounselor from './pages/VirtualCounselor';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/admissions" element={<Admissions />} />
           <Route path="/mental-health" element={<MentalHealth />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/virtual-counselor" element={<VirtualCounselor />} />
         </Routes>
       </main>
     </div>

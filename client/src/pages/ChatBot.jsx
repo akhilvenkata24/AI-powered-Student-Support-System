@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, Globe, Bot, Sparkles } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { Search, Globe, Bot, Sparkles, Heart } from 'lucide-react';
 import ChatBubble from '../components/chat/ChatBubble';
 import MessageInput from '../components/chat/MessageInput';
 import { sendChatMessage } from '../services/api';
@@ -15,6 +16,7 @@ const QUICK_ACTIONS = [
 const LANGUAGES = ['English', 'Spanish', 'French', 'Mandarin', 'Hindi', 'Arabic'];
 
 const ChatBot = () => {
+    const location = useLocation();
     const [language, setLanguage] = useState('English');
     const [sentiment, setSentiment] = useState(null);
     const [isStressed, setIsStressed] = useState(false);
@@ -28,10 +30,18 @@ const ChatBot = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [showQuickActions, setShowQuickActions] = useState(true);
     const messagesEndRef = useRef(null);
+    const initialPromptSentRef = useRef(false);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isLoading]);
+
+    useEffect(() => {
+        if (location.state?.initialPrompt && !initialPromptSentRef.current) {
+            initialPromptSentRef.current = true;
+            handleSendMessage(location.state.initialPrompt);
+        }
+    }, [location.state]);
 
     const handleSendMessage = async (content) => {
         if (!content.trim()) return;

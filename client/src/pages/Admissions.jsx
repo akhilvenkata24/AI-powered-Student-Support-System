@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { CheckCircle, Clock, FilePlus, MessageSquare, Activity } from 'lucide-react';
-import api, { getStudentProfile } from '../services/api';
+import { Link, useNavigate } from 'react-router-dom';
+import { CheckCircle, Clock, FilePlus, MessageSquare, Activity, UserCheck } from 'lucide-react';
+import api from '../services/api';
 
 const Admissions = () => {
     const [profile, setProfile] = useState(null);
@@ -10,37 +10,29 @@ const Admissions = () => {
 
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState('');
+    const [studentIdInput, setStudentIdInput] = useState('');
+    const navigate = useNavigate();
 
     useEffect(() => {
         console.log("Admissions Portal Mounted. Profile verified:", isVerified);
         setIsLoading(false);
     }, []);
 
-    const handleFileUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    const handleVerify = async (e) => {
+        e.preventDefault();
+        if (!studentIdInput.trim()) return;
 
         setUploading(true);
         setUploadError('');
         
         try {
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                const content = event.target.result;
-                try {
-                    const res = await api.post('/user/verify-document', { content });
-                    console.log("Verification success:", res.data.data.externalId);
-                    setProfile(res.data.data);
-                    setIsVerified(true);
-                } catch (err) {
-                    setUploadError(err.response?.data?.error || 'Verification failed');
-                } finally {
-                    setUploading(false);
-                }
-            };
-            reader.readAsText(file);
+            const res = await api.get(`/user/profile/${studentIdInput}`);
+            console.log("Verification success:", res.data.data.externalId);
+            setProfile(res.data.data);
+            setIsVerified(true);
         } catch (err) {
-            setUploadError('Failed to read file');
+            setUploadError(err.response?.data?.error || 'Verification failed. Please check your Student ID.');
+        } finally {
             setUploading(false);
         }
     };
@@ -50,6 +42,23 @@ const Admissions = () => {
         under_review: { label: 'Application Under Review', color: 'yellow' },
         accepted: { label: 'Accepted!', color: 'emerald' },
         rejected: { label: 'Decision Released', color: 'rose' },
+    };
+
+    const handleDiscuss = () => {
+        if (!profile) return;
+        const pendingDocs = (profile.documents || [])
+            .filter(d => d.status !== 'received')
+            .map(d => d.name);
+
+        let initialPrompt = `Hello, I am checking my admission status. My student ID is ${profile.externalId} and my application is currently ${profile.admissionStatus.replace('_', ' ')}. `;
+        
+        if (pendingDocs.length > 0) {
+            initialPrompt += `I still need to submit the following documents: ${pendingDocs.join(', ')}. Could you suggest exactly what I need to do next, how to obtain them, and when to upload them?`;
+        } else {
+            initialPrompt += `I have submitted all required documents! What are the next steps in the admission process?`;
+        }
+
+        navigate('/chat', { state: { initialPrompt } });
     };
 
     if (isLoading) return (
@@ -79,28 +88,40 @@ const Admissions = () => {
                         </div>
                         <h1 className="text-5xl font-black font-[Outfit] text-white tracking-tight">Admissions Portal</h1>
                         <p className="text-white/40 max-w-lg mx-auto leading-relaxed">
-                            To track your application progress, please verify your identity by uploading your 
-                            <span className="text-blue-400 font-semibold px-1">Official Application Summary</span> document.
+                            To track your application progress, please verify your identity by entering your 
+                            <span className="text-blue-400 font-semibold px-1">Student ID</span> below.
                         </p>
                     </div>
                 )}
 
-                {/* Upload Section (Always visible or prominent when no profile) */}
+                {/* Verification Section */}
                 <div className={`glass-card p-8 border-dashed border-2 transition-all text-center ${!isVerified ? 'border-blue-500/40 bg-blue-500/5' : 'border-white/10 opacity-60 hover:opacity-100'}`}>
                     <h3 className="font-bold text-white mb-2 font-[Outfit]">Verify Application Status</h3>
-                    <p className="text-white/40 text-sm mb-6 max-w-md mx-auto">Upload your .txt application summary from the university to unlock your live tracking dashboard.</p>
-                    <div className="flex flex-col items-center gap-3">
-                        <label className="btn-primary cursor-pointer gap-2 px-8 py-3 rounded-2xl shadow-xl hover:shadow-blue-500/20">
-                            <FilePlus className="w-5 h-5" />
-                            {uploading ? 'Verifying Student ID...' : 'Upload Summary Document'}
-                            <input type="file" accept=".txt" onChange={handleFileUpload} className="hidden" disabled={uploading} />
-                        </label>
-                        {uploadError && (
-                            <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold animate-in fade-in slide-in-from-top-2">
-                                ⚠️ {uploadError}
-                            </div>
-                        )}
-                    </div>
+                    <p className="text-white/40 text-sm mb-6 max-w-md mx-auto">Enter your Student ID to unlock your live application tracking dashboard.</p>
+                    <form onSubmit={handleVerify} className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
+                        <input 
+                            type="text" 
+                            className="dark-input flex-1 !py-3 !text-sm" 
+                            placeholder="e.g. STU882910"
+                            value={studentIdInput}
+                            onChange={(e) => setStudentIdInput(e.target.value)}
+                            disabled={uploading}
+                            required
+                        />
+                        <button 
+                            type="submit"
+                            className="btn-primary gap-2 px-8 py-3 rounded-2xl shadow-xl hover:shadow-blue-500/20 whitespace-nowrap"
+                            disabled={uploading || !studentIdInput.trim()}
+                        >
+                            <UserCheck className="w-5 h-5" />
+                            {uploading ? 'Verifying...' : 'Verify ID'}
+                        </button>
+                    </form>
+                    {uploadError && (
+                        <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold animate-in fade-in slide-in-from-top-2 max-w-md mx-auto">
+                            ⚠️ {uploadError}
+                        </div>
+                    )}
                 </div>
 
                 {isVerified && profile && (
@@ -188,9 +209,9 @@ const Admissions = () => {
                             </ul>
 
                             <div className="px-8 py-6 bg-white/[0.01] border-t border-white/5 flex flex-col sm:flex-row items-center gap-4">
-                                <Link to="/chat" className="w-full sm:w-auto btn-primary text-xs gap-2 px-6">
+                                <button onClick={handleDiscuss} className="w-full sm:w-auto btn-primary text-xs gap-2 px-6">
                                     <MessageSquare className="w-4 h-4" /> Discuss with Admission AI
-                                </Link>
+                                </button>
                                 <p className="text-[10px] text-white/20 font-medium italic">Missing a document? The AI can help explain alternative proof requirements.</p>
                             </div>
                         </div>

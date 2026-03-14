@@ -24,6 +24,7 @@ app.use(express.json()); // Parse JSON request bodies
 app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/counselor', require('./routes/counselorRoutes'));
 
 // Standardized health check
 app.get('/health', (req, res) => {
