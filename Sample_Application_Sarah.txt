@@ -1,0 +1,20 @@
+UNIVERSITY ADMISSIONS OFFICE
+OFFICIAL APPLICATION SUMMARY
+
+----------------------------------------
+STUDENT INFORMATION
+Name: Sarah Jenkins
+Student ID: STU882910
+Status: Applied
+Program: Computer Science, B.S.
+----------------------------------------
+
+CHECKLIST STATUS:
+[X] Online Application
+[X] Application Fee
+[ ] High School Transcripts
+[X] Personal Statement
+[ ] SAT/ACT Scores
+
+NOTE: This document is for internal verification purposes only.
+Please upload this to the CampusAI portal to track your live status.

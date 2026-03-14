@@ -1,0 +1,20 @@
+UNIVERSITY ADMISSIONS OFFICE
+OFFICIAL APPLICATION SUMMARY
+
+----------------------------------------
+STUDENT INFORMATION
+Name: Michael Chen
+Student ID: STU449201
+Status: Under Review
+Program: Mechanical Engineering, B.S.
+----------------------------------------
+
+CHECKLIST STATUS:
+[X] Online Application
+[X] Application Fee
+[X] High School Transcripts
+[X] Personal Statement
+[X] SAT/ACT Scores
+
+NOTE: This document is for internal verification purposes only.
+Please upload this to the CampusAI portal to track your live status.

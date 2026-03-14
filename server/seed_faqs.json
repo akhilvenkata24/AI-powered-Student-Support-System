@@ -1,0 +1,122 @@
+[
+  {
+    "question": "What are the admission requirements for undergraduate programs?",
+    "answer": "Undergraduate applicants must submit their high school transcripts, SAT/ACT scores (if applicable), two letters of recommendation, and a completed application form by the priority deadline.",
+    "category": "admission",
+    "tags": ["undergrad", "requirements", "high school"]
+  },
+  {
+    "question": "When is the application deadline for the Fall semester?",
+    "answer": "The regular decision application deadline for the Fall semester is January 15th. Early Action deadline is November 1st.",
+    "category": "admission",
+    "tags": ["deadline", "fall", "early action"]
+  },
+  {
+    "question": "Do you accept international students?",
+    "answer": "Yes, we welcome students from around the world. International applicants must additionally provide proof of English proficiency (TOEFL/IELTS) and financial support documentation.",
+    "category": "admission",
+    "tags": ["international", "toefl", "overseas"]
+  },
+  {
+    "question": "How do I check my application status?",
+    "answer": "You can check your application status by logging into the Applicant Portal using the credentials emailed to you after submission.",
+    "category": "admission",
+    "tags": ["status", "portal", "track"]
+  },
+  {
+    "question": "What is the minimum GPA required for admission?",
+    "answer": "While we review applications holistically, the average admitted student has a high school GPA of 3.4 or higher on a 4.0 scale.",
+    "category": "admission",
+    "tags": ["gpa", "grades", "requirements"]
+  },
+  {
+    "question": "How do I register for classes?",
+    "answer": "Students register for classes through the Student Portal under the 'Academics' tab. Registration windows open based on your academic year standing (Seniors first).",
+    "category": "academic",
+    "tags": ["registration", "classes", "enrollment"]
+  },
+  {
+    "question": "Where can I find academic tutoring?",
+    "answer": "Free academic tutoring is available at the Student Success Center located on the 2nd floor of the main library. You can book an appointment online or walk in.",
+    "category": "academic",
+    "tags": ["tutoring", "help", "library"]
+  },
+  {
+    "question": "How do I change my major?",
+    "answer": "To change your major, you must schedule a meeting with your current academic advisor and complete the 'Change of Major' form available on the Registrar's website.",
+    "category": "academic",
+    "tags": ["major", "advisor", "change"]
+  },
+  {
+    "question": "What is the policy for dropping a class?",
+    "answer": "You can drop a class without a 'W' (Withdrawal) on your transcript within the first two weeks of the semester. After that, you have until week 10 to withdraw with a 'W'.",
+    "category": "academic",
+    "tags": ["drop", "withdraw", "classes"]
+  },
+  {
+    "question": "When is the deadline to apply for the Merit Scholarship?",
+    "answer": "The deadline for all university-sponsored Merit Scholarships is March 1st for the upcoming academic year.",
+    "category": "financial",
+    "tags": ["scholarship", "merit", "deadline"]
+  },
+  {
+    "question": "How do I apply for financial aid?",
+    "answer": "To apply for financial aid, you must complete the Free Application for Federal Student Aid (FAFSA) online and include our university school code (001234).",
+    "category": "financial",
+    "tags": ["fafsa", "aid", "process"]
+  },
+  {
+    "question": "Are there on-campus jobs available for students?",
+    "answer": "Yes, we offer various work-study and regular on-campus employment opportunities. Check the Career Services portal for current job postings.",
+    "category": "financial",
+    "tags": ["jobs", "work-study", "employment"]
+  },
+  {
+    "question": "What are the tuition fees per semester?",
+    "answer": "For the current academic year, in-state tuition is $4,500 per semester, and out-of-state tuition is $12,000 per semester (excluding housing and meal plans).",
+    "category": "financial",
+    "tags": ["tuition", "cost", "fees"]
+  },
+  {
+    "question": "When are tuition fees due?",
+    "answer": "Tuition fees are due on the first day of classes each semester. Payment plans are available through the Bursar's Office.",
+    "category": "financial",
+    "tags": ["deadline", "payment", "bursar"]
+  },
+  {
+    "question": "Are freshmen required to live on campus?",
+    "answer": "Yes, all first-year freshmen whose permanent address is more than 30 miles from campus are required to live in university housing.",
+    "category": "campus",
+    "tags": ["housing", "freshmen", "dorm requirement"]
+  },
+  {
+    "question": "What are the hostel/dorm facilities like?",
+    "answer": "Our residence halls feature double or single rooms, high-speed Wi-Fi, communal kitchens, laundry facilities on every floor, and common study areas.",
+    "category": "campus",
+    "tags": ["hostel", "dorm", "facilities"]
+  },
+  {
+    "question": "How do I apply for hostel accommodation?",
+    "answer": "Once admitted, you can apply for housing through the Residence Life portal. Room assignments are made on a first-come, first-served basis.",
+    "category": "campus",
+    "tags": ["hostel application", "housing", "room"]
+  },
+  {
+    "question": "What are the dining options on campus?",
+    "answer": "We have a main dining hall offering buffet-style meals, two food courts with national chains, and several coffee shops across campus. Meal plans are required for resident students.",
+    "category": "campus",
+    "tags": ["food", "dining", "meal plan"]
+  },
+  {
+    "question": "Where is the student health center located?",
+    "answer": "The Student Health Center is located next to the recreation center. It offers basic medical care, vaccinations, and mental health counseling.",
+    "category": "campus",
+    "tags": ["health", "medical", "clinic"]
+  },
+  {
+    "question": "What mental health resources are available?",
+    "answer": "The university provides free, confidential counseling services to all enrolled students. You can book an appointment online or call our 24/7 crisis hotline at (555) 123-4567.",
+    "category": "mental_health",
+    "tags": ["counseling", "therapy", "crisis"]
+  }
+]
