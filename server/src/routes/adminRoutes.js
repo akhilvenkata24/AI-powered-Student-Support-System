@@ -10,7 +10,9 @@ const {
     getSlots,
     getAppointments,
     createAppointment,
-    updateAppointmentFlag
+    updateAppointmentFlag,
+    deleteAppointment,
+    exportScheduledAppointments
 } = require('../controllers/adminController');
 const validate = require('../middleware/validation');
 const { requireAdminAuth } = require('../middleware/adminAuth');
@@ -24,7 +26,9 @@ router.put('/faqs/:faqId', requireAdminAuth, validate(faqSchema), updateFAQ);
 router.delete('/faqs/:faqId', requireAdminAuth, deleteFAQ);
 router.get('/appointments/slots', getSlots); // public — no auth needed
 router.get('/appointments', requireAdminAuth, getAppointments);
+router.get('/appointments/export', requireAdminAuth, exportScheduledAppointments);
 router.post('/appointments', validate(appointmentSchema), createAppointment);
 router.patch('/appointments/:appointmentId/flag', requireAdminAuth, updateAppointmentFlag);
+router.delete('/appointments/:appointmentId', requireAdminAuth, deleteAppointment);
 
 module.exports = router;

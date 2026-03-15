@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, FileText, MessageSquare, Calendar, Activity, AlertCircle, Bot, Plus, X, TrendingUp, Search, Zap, Pencil, Trash2, Flag, Save, LogIn, LogOut, Lock, User } from 'lucide-react';
+import { Users, FileText, MessageSquare, Calendar, Activity, AlertCircle, Bot, Plus, X, TrendingUp, Search, Zap, Pencil, Trash2, Flag, Save, LogIn, LogOut, Lock, User, Download } from 'lucide-react';
 import api, { setAdminToken, getAdminToken, clearAdminToken } from '../services/api';
 import ParticleBackground from '../components/common/ParticleBackground';
 
@@ -179,6 +179,8 @@ const AdminDashboard = () => {
     const [faqDraft, setFaqDraft] = useState({ question: '', answer: '', category: 'general', tags: '' });
     const [savingFaq, setSavingFaq] = useState(false);
     const [updatingAppointmentId, setUpdatingAppointmentId] = useState(null);
+    const [deletingAppointmentId, setDeletingAppointmentId] = useState(null);
+    const [downloadingAppointments, setDownloadingAppointments] = useState(false);
 
     useEffect(() => {
         if (!isAuthenticated) return;
@@ -293,6 +295,43 @@ const AdminDashboard = () => {
             alert(error.response?.data?.error || 'Unable to update appointment flag.');
         } finally {
             setUpdatingAppointmentId(null);
+        }
+    };
+
+    const handleDeleteAppointment = async (appointmentId) => {
+        if (!window.confirm('Delete this appointment permanently?')) return;
+
+        setDeletingAppointmentId(appointmentId);
+        try {
+            await api.delete(`/admin/appointments/${appointmentId}`);
+            setAppointments((prev) => prev.filter((appointment) => appointment._id !== appointmentId));
+        } catch (error) {
+            alert(error.response?.data?.error || 'Unable to delete appointment.');
+        } finally {
+            setDeletingAppointmentId(null);
+        }
+    };
+
+    const handleDownloadScheduledAppointments = async () => {
+        setDownloadingAppointments(true);
+        try {
+            const response = await api.get('/admin/appointments/export?format=csv', {
+                responseType: 'blob',
+            });
+
+            const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8' });
+            const fileURL = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = fileURL;
+            link.setAttribute('download', `scheduled-appointments-${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(fileURL);
+        } catch (error) {
+            alert(error.response?.data?.error || 'Unable to download scheduled appointments.');
+        } finally {
+            setDownloadingAppointments(false);
         }
     };
 
@@ -609,7 +648,18 @@ const AdminDashboard = () => {
                         <div className="card-base bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-in fade-in duration-500">
                              <div className="p-8 md:p-10 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
                                 <h3 className="text-2xl md:text-3xl font-bold">Care Records</h3>
-                                <div className={badgeClass('danger')}>{appointments.length} Total Cases</div>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={handleDownloadScheduledAppointments}
+                                        disabled={downloadingAppointments}
+                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                        {downloadingAppointments ? 'Preparing...' : 'Download Scheduled'}
+                                    </button>
+                                    <div className={badgeClass('danger')}>{appointments.length} Total Cases</div>
+                                </div>
                              </div>
                              <div>
                                 {appointments.length === 0 ? (
@@ -650,6 +700,15 @@ const AdminDashboard = () => {
                                                             : app.flaggedForReview
                                                                 ? 'Remove Flag'
                                                                 : 'Flag Request'}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteAppointment(app._id)}
+                                                        disabled={deletingAppointmentId === app._id}
+                                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-200 dark:border-rose-800/40 text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 disabled:opacity-60"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                        {deletingAppointmentId === app._id ? 'Deleting...' : 'Delete'}
                                                     </button>
                                                 </div>
                                             </div>

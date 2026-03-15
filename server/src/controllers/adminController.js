@@ -4,6 +4,17 @@ const CounselingAppointment = require('../models/CounselingAppointment');
 const reportService = require('../services/reportService');
 const { sendSuccess, sendError } = require('../utils/apiResponse');
 
+const COUNSELOR_POOL = [
+    'Dr. Sarah Jenkins',
+    'Dr. Michael Chen',
+    'Dr. Aisha Rahman',
+];
+
+const getRandomCounselor = () => {
+    const index = Math.floor(Math.random() * COUNSELOR_POOL.length);
+    return COUNSELOR_POOL[index];
+};
+
 /**
  * @desc    Get dashboard statistics
  */
@@ -192,7 +203,7 @@ const createAppointment = async (req, res, next) => {
 
         const newAppointment = new CounselingAppointment({
             studentId: user._id,
-            counselorName: 'Assigned Counselor',
+            counselorName: getRandomCounselor(),
             appointmentDate: new Date(`${appointmentDate}T${slotTime}:00.000Z`),
             dateString: appointmentDate,
             slotTime,
@@ -204,6 +215,95 @@ const createAppointment = async (req, res, next) => {
         });
         await newAppointment.save();
         sendSuccess(res, newAppointment, 201);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Delete an appointment
+ */
+const deleteAppointment = async (req, res, next) => {
+    try {
+        const { appointmentId } = req.params;
+        const appointment = await CounselingAppointment.findById(appointmentId);
+
+        if (!appointment) {
+            return sendError(res, 'Appointment not found.', 404);
+        }
+
+        await appointment.deleteOne();
+        sendSuccess(res, { id: appointmentId });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Download scheduled appointments as document (CSV or TXT)
+ */
+const exportScheduledAppointments = async (req, res, next) => {
+    try {
+        const format = (req.query.format || 'csv').toString().toLowerCase();
+        const scheduled = await CounselingAppointment.find({ status: 'scheduled' })
+            .populate('studentId', 'name email externalId')
+            .sort({ appointmentDate: 1 });
+
+        const rows = scheduled.map((appointment) => ({
+            studentId: appointment.studentId?.externalId || '',
+            studentName: appointment.studentId?.name || '',
+            studentEmail: appointment.studentId?.email || appointment.contactEmail || '',
+            counselor: appointment.counselorName || '',
+            date: appointment.dateString || appointment.appointmentDate?.toISOString().split('T')[0] || '',
+            slot: appointment.slotTime || '',
+            mode: appointment.mode || '',
+            reason: appointment.requestReason || '',
+            status: appointment.status || '',
+            flaggedForReview: appointment.flaggedForReview ? 'yes' : 'no',
+        }));
+
+        if (format === 'txt') {
+            const lines = [
+                'Scheduled Appointments',
+                `Generated At: ${new Date().toISOString()}`,
+                '------------------------------------------------------------',
+                ...rows.map((row, i) => (
+                    `${i + 1}. ${row.studentName} (${row.studentId})\n` +
+                    `   Email: ${row.studentEmail}\n` +
+                    `   Counselor: ${row.counselor}\n` +
+                    `   Date/Slot: ${row.date} ${row.slot}\n` +
+                    `   Mode: ${row.mode}\n` +
+                    `   Reason: ${row.reason}\n` +
+                    `   Status: ${row.status}\n` +
+                    `   Flagged: ${row.flaggedForReview}`
+                )),
+            ];
+
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+            res.setHeader('Content-Disposition', 'attachment; filename="scheduled-appointments.txt"');
+            return res.status(200).send(lines.join('\n\n'));
+        }
+
+        const header = ['Student ID', 'Student Name', 'Student Email', 'Counselor', 'Date', 'Slot', 'Mode', 'Reason', 'Status', 'Flagged'];
+        const csvRows = [
+            header.join(','),
+            ...rows.map((row) => [
+                row.studentId,
+                row.studentName,
+                row.studentEmail,
+                row.counselor,
+                row.date,
+                row.slot,
+                row.mode,
+                row.reason,
+                row.status,
+                row.flaggedForReview,
+            ].map((value) => `"${String(value || '').replace(/"/g, '""')}"`).join(',')),
+        ];
+
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', 'attachment; filename="scheduled-appointments.csv"');
+        return res.status(200).send(csvRows.join('\n'));
     } catch (error) {
         next(error);
     }
@@ -247,5 +347,7 @@ module.exports = {
     getSlots,
     getAppointments,
     createAppointment,
-    updateAppointmentFlag
+    updateAppointmentFlag,
+    deleteAppointment,
+    exportScheduledAppointments
 };
