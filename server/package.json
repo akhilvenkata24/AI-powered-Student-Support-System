@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed:admin": "node seed_admin.js"
+    "seed:admin": "node seed_admin.js",
+    "seed:students": "node seed_students.js",
+    "seed:faqs": "node seed.js",
+    "seed:all": "node seed_admin.js && node seed_students.js && node seed.js"
   },
   "engines": {
     "node": ">=18"

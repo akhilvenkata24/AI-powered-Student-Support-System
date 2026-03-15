@@ -98,6 +98,44 @@ const deleteFAQ = async (req, res, next) => {
     }
 };
 
+const WORKING_SLOTS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'];
+
+const formatSlotLabel = (time) => {
+    const hour = parseInt(time.split(':')[0], 10);
+    const suffix = hour >= 12 ? 'PM' : 'AM';
+    const display = hour > 12 ? hour - 12 : hour;
+    return `${display}:00 ${suffix}`;
+};
+
+/**
+ * @desc    Get available slots for a given date (public)
+ */
+const getSlots = async (req, res, next) => {
+    try {
+        const { date } = req.query;
+        if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            return sendError(res, 'Valid date (YYYY-MM-DD) is required.', 400);
+        }
+        const dayOfWeek = new Date(date + 'T00:00:00.000Z').getUTCDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+            return sendError(res, 'Counseling is not available on weekends.', 400);
+        }
+        const booked = await CounselingAppointment.find({
+            dateString: date,
+            status: 'scheduled',
+        }).select('slotTime');
+        const bookedTimes = new Set(booked.map((a) => a.slotTime));
+        const slots = WORKING_SLOTS.map((time) => ({
+            time,
+            label: formatSlotLabel(time),
+            available: !bookedTimes.has(time),
+        }));
+        sendSuccess(res, { date, slots });
+    } catch (error) {
+        next(error);
+    }
+};
+
 /**
  * @desc    Get counseling appointments
  */
@@ -117,31 +155,52 @@ const getAppointments = async (req, res, next) => {
  */
 const createAppointment = async (req, res, next) => {
     try {
-        const { studentId, appointmentDate, reason, email } = req.body;
-        
-        // Find the user to validate the studentId
-        const User = require('../models/User');
-        let user = await User.findOne({ externalId: studentId });
-        
-        if (!user) {
-            return res.status(400).json({ success: false, message: 'Invalid Student ID. Student not found.' });
+        const { studentId, email, appointmentDate, slotTime, reason } = req.body;
+
+        // Validate working day (Mon–Fri)
+        const dayOfWeek = new Date(appointmentDate + 'T00:00:00.000Z').getUTCDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+            return sendError(res, 'Appointments can only be booked on working days (Monday–Friday).', 400);
         }
 
-        // Map reason to valid type enum
+        // Validate slot time
+        if (!WORKING_SLOTS.includes(slotTime)) {
+            return sendError(res, 'Invalid slot. Working hours are 9 AM – 4 PM.', 400);
+        }
+
+        // Check slot is not already taken
+        const conflict = await CounselingAppointment.findOne({
+            dateString: appointmentDate,
+            slotTime,
+            status: 'scheduled',
+        });
+        if (conflict) {
+            return sendError(res, 'This slot is already booked. Please choose another.', 409);
+        }
+
+        // Find student
+        const User = require('../models/User');
+        const user = await User.findOne({ externalId: studentId.trim().toUpperCase() });
+        if (!user) {
+            return sendError(res, 'Student ID not found. Please check your ID and try again.', 404);
+        }
+
+        // Map reason to type enum
         let type = 'mental_health_therapy';
-        if (reason === 'Academic Support') type = 'academic_advising';
-        if (reason === 'Career Anxiety') type = 'career_services';
+        if (reason === 'academic') type = 'academic_advising';
+        if (reason === 'career') type = 'career_services';
 
         const newAppointment = new CounselingAppointment({
             studentId: user._id,
-            counselorName: 'Assigned Counselor', // Default since UI doesn't collect this
-            appointmentDate,
+            counselorName: 'Assigned Counselor',
+            appointmentDate: new Date(`${appointmentDate}T${slotTime}:00.000Z`),
+            dateString: appointmentDate,
+            slotTime,
             type,
-            mode: 'virtual', // Default
-            status: 'scheduled', 
+            mode: 'virtual',
+            status: 'scheduled',
             contactEmail: email,
             requestReason: reason,
-            notes: `Reason: ${reason} | Contact Email: ${email}`
         });
         await newAppointment.save();
         sendSuccess(res, newAppointment, 201);
@@ -185,6 +244,7 @@ module.exports = {
     createFAQ,
     updateFAQ,
     deleteFAQ,
+    getSlots,
     getAppointments,
     createAppointment,
     updateAppointmentFlag

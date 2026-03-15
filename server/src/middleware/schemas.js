@@ -17,7 +17,8 @@ const faqSchema = Joi.object({
 const appointmentSchema = Joi.object({
     studentId: Joi.string().required(),
     email: Joi.string().email().required(),
-    appointmentDate: Joi.date().iso().required(),
+    appointmentDate: Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).required(),
+    slotTime: Joi.string().pattern(/^\d{2}:\d{2}$/).required(),
     reason: Joi.string().required()
 });
 

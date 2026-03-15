@@ -15,6 +15,13 @@ const counselingAppointmentSchema = new mongoose.Schema({
         type: Date,
         required: true,
     },
+    dateString: {
+        type: String, // 'YYYY-MM-DD' for easy slot querying
+        index: true,
+    },
+    slotTime: {
+        type: String, // '09:00', '10:00', etc.
+    },
     type: {
         type: String,
         enum: ['academic_advising', 'financial_aid_counseling', 'mental_health_therapy', 'career_services'],

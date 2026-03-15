@@ -7,6 +7,7 @@ const {
     createFAQ,
     updateFAQ,
     deleteFAQ,
+    getSlots,
     getAppointments,
     createAppointment,
     updateAppointmentFlag
@@ -21,6 +22,7 @@ router.get('/faqs', requireAdminAuth, getFAQs);
 router.post('/faqs', requireAdminAuth, validate(faqSchema), createFAQ);
 router.put('/faqs/:faqId', requireAdminAuth, validate(faqSchema), updateFAQ);
 router.delete('/faqs/:faqId', requireAdminAuth, deleteFAQ);
+router.get('/appointments/slots', getSlots); // public — no auth needed
 router.get('/appointments', requireAdminAuth, getAppointments);
 router.post('/appointments', validate(appointmentSchema), createAppointment);
 router.patch('/appointments/:appointmentId/flag', requireAdminAuth, updateAppointmentFlag);
