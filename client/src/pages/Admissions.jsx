@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Clock, FilePlus, MessageSquare, Activity, UserCheck, ArrowRight, ShieldCheck, Download, Info, GraduationCap, Bot } from 'lucide-react';
+import { CheckCircle, Clock, FilePlus, MessageSquare, Activity, UserCheck, ArrowRight, ShieldCheck, Info, GraduationCap, Bot } from 'lucide-react';
 import api from '../services/api';
 import ParticleBackground from '../components/common/ParticleBackground';
 
@@ -197,11 +197,6 @@ const Admissions = () => {
                                                 </p>
                                             </div>
                                         </div>
-                                        {doc.status !== 'received' && (
-                                            <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:border-brand-primary dark:hover:border-brand-secondary hover:text-brand-primary dark:hover:text-brand-secondary transition-colors shadow-sm">
-                                                Upload <Download className="w-3.5 h-3.5" />
-                                            </button>
-                                        )}
                                     </div>
                                 ))}
                             </div>
