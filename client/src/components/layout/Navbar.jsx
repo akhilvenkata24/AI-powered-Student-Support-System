@@ -44,7 +44,7 @@ const Navbar = () => {
                 <div className="flex justify-between items-center h-16 px-6 md:px-8">
 
                     {/* Logo Section */}
-                    <Link to="/home" className="flex items-center gap-3">
+                    <Link to="/" className="flex items-center gap-3">
                         <div className="bg-brand-primary p-2 rounded-xl text-white">
                             <GraduationCap className="h-5 w-5" />
                         </div>
