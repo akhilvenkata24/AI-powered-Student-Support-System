@@ -99,7 +99,7 @@ const MessageInput = ({ onSendMessage, isLoading }) => {
     return (
         <form 
             onSubmit={handleSubmit} 
-            className="relative flex items-end gap-3 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full transition-all focus-within:border-brand-primary/50 focus-within:ring-4 focus-within:ring-brand-primary/10 shadow-sm"
+            className="relative flex items-center gap-3 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full transition-all focus-within:border-brand-primary/50 focus-within:ring-4 focus-within:ring-brand-primary/10 shadow-sm"
         >
             <button
                 type="button"
@@ -112,7 +112,7 @@ const MessageInput = ({ onSendMessage, isLoading }) => {
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                 title={speechSupported ? "Speech to text" : "Speech recognition not supported"}
             >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                {isListening ? <MicOff className="w-4 h-4 shrink-0" /> : <Mic className="w-4 h-4 shrink-0" />}
             </button>
 
             <div className="flex-1 min-h-[50px] flex items-center px-4">
