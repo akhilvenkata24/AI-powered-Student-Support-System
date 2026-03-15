@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, Calendar, CheckCircle, Info, ShieldCheck, Loader2, Clock } from 'lucide-react';
+import { Heart, Calendar, CheckCircle, Info, ShieldCheck, Loader2, Clock, ArrowLeft } from 'lucide-react';
 import api from '../services/api';
 import ParticleBackground from '../components/common/ParticleBackground';
 
@@ -191,7 +191,7 @@ const MentalHealth = () => {
                                         </div>
                                     </div>
                                     <button onClick={closeModal} className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                                        <Heart className="w-5 h-5" />
+                                        <ArrowLeft className="w-5 h-5" />
                                     </button>
                                 </div>
 

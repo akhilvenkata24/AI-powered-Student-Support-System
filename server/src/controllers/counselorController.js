@@ -14,6 +14,49 @@ const withTimeout = async (promise, ms, label) => {
     }
 };
 
+const trimSummary = (text, maxChars = 1200) => {
+    if (!text) return '';
+    return text.length > maxChars ? text.slice(text.length - maxChars) : text;
+};
+
+const updateCounselorSummary = async ({ user, question, responseText, client }) => {
+    const previousSummary = trimSummary(user.counselorSummary || '');
+    const fallbackSummary = trimSummary(
+        `${previousSummary}\nStudent: ${question}\nAssistant: ${responseText}`.trim()
+    );
+
+    try {
+        const summaryCompletion = await withTimeout(
+            client.chat.completions.create({
+                model: process.env.OPENAI_API_KEY?.startsWith('gsk_') ? 'llama-3.3-70b-versatile' : 'gpt-3.5-turbo',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'Create a concise mental-wellbeing continuity summary for clinicians. Keep it factual, safe, and under 120 words. Include persistent concerns, tone trends, and helpful follow-up focus points. Do not include personally sensitive details beyond what is needed for support continuity.'
+                    },
+                    {
+                        role: 'user',
+                        content: `Previous summary:\n${previousSummary || 'None'}\n\nNew student message:\n${question}\n\nAssistant response:\n${responseText}`
+                    }
+                ],
+                temperature: 0.3,
+                max_tokens: 180,
+            }),
+            20000,
+            'Summary generation'
+        );
+
+        const generatedSummary = summaryCompletion.choices?.[0]?.message?.content?.trim();
+        user.counselorSummary = trimSummary(generatedSummary || fallbackSummary);
+    } catch (summaryError) {
+        console.warn('Summary generation failed, using fallback summary:', summaryError.message);
+        user.counselorSummary = fallbackSummary;
+    }
+
+    user.counselorSummaryUpdatedAt = new Date();
+    await user.save();
+};
+
 const askCounselor = async (req, res, next) => {
     try {
         const { question, studentId } = req.body;
@@ -33,11 +76,19 @@ const askCounselor = async (req, res, next) => {
             return res.status(404).json({ success: false, error: 'Student ID not found.' });
         }
 
+        const apiKey = process.env.OPENAI_API_KEY;
+        const isGroq = apiKey.startsWith('gsk_');
+        const configuration = {
+            apiKey,
+            ...(isGroq && { baseURL: 'https://api.groq.com/openai/v1' })
+        };
+        const client = new OpenAI(configuration);
+
         // 1. Generate text response (60s - user is ok with delay, must succeed)
         let aiResponseText;
         try {
             aiResponseText = await withTimeout(
-                generateCounselorResponse(question),
+                generateCounselorResponse(question, user.counselorSummary, client),
                 60000,
                 'LLM response'
             );
@@ -69,6 +120,14 @@ const askCounselor = async (req, res, next) => {
             console.warn('TTS failure:', err.message);
         }
 
+        // 3. Update brief counselor continuity summary linked to student profile
+        await updateCounselorSummary({
+            user,
+            question,
+            responseText: aiResponseText,
+            client,
+        });
+
         sendSuccess(res, {
             text: aiResponseText,
             audioUrl: audioBase64,
@@ -81,21 +140,17 @@ const askCounselor = async (req, res, next) => {
     }
 };
 
-const generateCounselorResponse = async (question) => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    const isGroq = apiKey.startsWith('gsk_');
-    const configuration = {
-        apiKey: apiKey,
-        ...(isGroq && { baseURL: "https://api.groq.com/openai/v1" })
-    };
-    const client = new OpenAI(configuration);
+const generateCounselorResponse = async (question, previousSummary, client) => {
+    const contextBlock = previousSummary
+        ? `Context from prior counselor sessions (for continuity): ${trimSummary(previousSummary, 800)}`
+        : 'No prior counselor session summary is available.';
 
     const response = await client.chat.completions.create({
-        model: isGroq ? "llama-3.3-70b-versatile" : "gpt-3.5-turbo",
+        model: process.env.OPENAI_API_KEY?.startsWith('gsk_') ? 'llama-3.3-70b-versatile' : 'gpt-3.5-turbo',
         messages: [
             {
                 role: "system",
-                content: "You are a calm and empathetic student mental-health support assistant. Respond ONLY to mental health, emotional wellbeing, stress, anxiety, burnout, loneliness, motivation, self-care, coping, and seeking help. If asked about anything unrelated, gently redirect to mental-health support. Keep replies very short, warm, and conversational - maximum 2 short sentences. If the user mentions self-harm or immediate danger, strongly encourage contacting emergency services and a trusted person."
+                content: `You are a calm and empathetic student mental-health support assistant. Respond ONLY to mental health, emotional wellbeing, stress, anxiety, burnout, loneliness, motivation, self-care, coping, and seeking help. If asked about anything unrelated, gently redirect to mental-health support. Keep replies very short, warm, and conversational - maximum 2 short sentences. If the user mentions self-harm or immediate danger, strongly encourage contacting emergency services and a trusted person.\n\n${contextBlock}`
             },
             { role: "user", content: question }
         ],

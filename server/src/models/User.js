@@ -50,6 +50,13 @@ const userSchema = new mongoose.Schema({
             receivedAt: Date
         }
     ],
+    counselorSummary: {
+        type: String,
+        default: '',
+    },
+    counselorSummaryUpdatedAt: {
+        type: Date,
+    },
     createdAt: {
         type: Date,
         default: Date.now,

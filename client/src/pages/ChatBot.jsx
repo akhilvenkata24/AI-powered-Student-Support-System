@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Globe, Bot, Sparkles, Heart, Send, Plus, Trash2, ShieldCheck, History } from 'lucide-react';
+import { Globe, Bot, Sparkles, Heart, Trash2, ShieldCheck } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import MessageInput from '../components/chat/MessageInput';
 import { sendChatMessage } from '../services/api';
 import ParticleBackground from '../components/common/ParticleBackground';
@@ -32,6 +34,17 @@ const QUICK_ACTIONS = [
 ];
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'Mandarin', 'Hindi', 'Arabic'];
+
+const BOT_MARKDOWN_COMPONENTS = {
+    p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+    h1: ({ children }) => <h1 className="text-base font-bold mb-2">{children}</h1>,
+    h2: ({ children }) => <h2 className="text-sm font-bold mb-2">{children}</h2>,
+    h3: ({ children }) => <h3 className="text-sm font-semibold mb-2">{children}</h3>,
+    ul: ({ children }) => <ul className="list-disc pl-5 space-y-1 mb-2">{children}</ul>,
+    ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1 mb-2">{children}</ol>,
+    li: ({ children }) => <li>{children}</li>,
+    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+};
 
 const ChatBot = () => {
     const savedSession = getSavedChatSession();
@@ -221,7 +234,13 @@ const ChatBot = () => {
                                             ? 'bg-brand-secondary text-white rounded-tr-sm' 
                                             : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-tl-sm'
                                     }`}>
-                                        <p>{msg.content}</p>
+                                        {msg.role === 'bot' ? (
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={BOT_MARKDOWN_COMPONENTS}>
+                                                {msg.content}
+                                            </ReactMarkdown>
+                                        ) : (
+                                            <p>{msg.content}</p>
+                                        )}
                                     </div>
                                     <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 px-1">
                                         {msg.role === 'user' ? 'You' : 'CampusAI'}
@@ -251,9 +270,6 @@ const ChatBot = () => {
                 <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                     <div className="max-w-4xl mx-auto flex flex-col gap-3">
                         <div className="flex items-center gap-3">
-                            <button className="p-3.5 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-brand-primary dark:hover:text-brand-secondary hover:border-brand-primary/30 dark:hover:border-brand-secondary/30 transition-all shadow-sm">
-                                <Plus className="w-5 h-5" />
-                            </button>
                             <div className="flex-1 relative">
                                 <MessageInput onSendMessage={handleSendMessage} isLoading={isLoading} />
                             </div>
