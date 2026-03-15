@@ -10,6 +10,23 @@ const isWeekend = (dateStr) => {
     return day === 0 || day === 6;
 };
 
+const STATUS_LABELS = {
+    scheduled: 'Scheduled',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+    no_show: 'No Show',
+};
+
+const formatAppointmentDate = (appointment) => {
+    if (appointment?.dateString && appointment?.slotTime) {
+        return `${appointment.dateString} at ${appointment.slotTime}`;
+    }
+    if (appointment?.appointmentDate) {
+        return new Date(appointment.appointmentDate).toLocaleString();
+    }
+    return 'Not available';
+};
+
 const MentalHealth = () => {
     const [isBooking, setIsBooking] = useState(false);
     const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -19,6 +36,10 @@ const MentalHealth = () => {
     const [slots, setSlots] = useState([]);
     const [slotsLoading, setSlotsLoading] = useState(false);
     const [slotsError, setSlotsError] = useState('');
+    const [statusStudentId, setStatusStudentId] = useState('');
+    const [statusLoading, setStatusLoading] = useState(false);
+    const [statusError, setStatusError] = useState('');
+    const [appointmentStatus, setAppointmentStatus] = useState(null);
 
     const [bookingData, setBookingData] = useState({
         studentId: '',
@@ -79,6 +100,28 @@ const MentalHealth = () => {
         setSlots([]);
         setSlotsError('');
         setBookingData({ studentId: '', email: '', appointmentDate: '', slotTime: '', reason: 'anxiety' });
+    };
+
+    const handleCheckStatus = async (e) => {
+        e.preventDefault();
+        const normalizedId = statusStudentId.trim().toUpperCase();
+        if (!normalizedId) {
+            setStatusError('Please enter a valid Student ID.');
+            return;
+        }
+
+        setStatusLoading(true);
+        setStatusError('');
+        setAppointmentStatus(null);
+
+        try {
+            const res = await api.get(`/user/appointment-status/${normalizedId}`);
+            setAppointmentStatus(res.data.data);
+        } catch (err) {
+            setStatusError(err.response?.data?.error || 'Could not fetch appointment status.');
+        } finally {
+            setStatusLoading(false);
+        }
     };
 
     return (
@@ -153,6 +196,67 @@ const MentalHealth = () => {
                                     <h4 className="font-bold text-slate-900 dark:text-white text-sm">Location</h4>
                                     <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Student Wellness Center, Room 204</p>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* ── Appointment Status Lookup ─────────────────────── */}
+                <div className="card-base p-8 md:p-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Check Appointment Status</h3>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
+                                Enter your Student ID to view your latest counseling appointment details.
+                            </p>
+                        </div>
+                        <form onSubmit={handleCheckStatus} className="w-full md:w-auto flex flex-col sm:flex-row gap-3">
+                            <input
+                                type="text"
+                                value={statusStudentId}
+                                onChange={(e) => setStatusStudentId(e.target.value.toUpperCase())}
+                                className="input-base text-sm min-w-[220px]"
+                                placeholder="e.g. STU882910"
+                            />
+                            <button
+                                type="submit"
+                                disabled={statusLoading}
+                                className="btn-primary !bg-brand-primary hover:!bg-brand-hover !px-6 !py-3 rounded-xl text-sm"
+                            >
+                                {statusLoading ? 'Checking...' : 'Check Status'}
+                            </button>
+                        </form>
+                    </div>
+
+                    {statusError && (
+                        <div className="mt-5 flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400 text-xs font-medium">
+                            <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                            {statusError}
+                        </div>
+                    )}
+
+                    {appointmentStatus?.appointment && (
+                        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4">
+                                <p className="text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">Student</p>
+                                <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{appointmentStatus.student?.name || 'Student'}</p>
+                                <p className="text-xs text-slate-600 dark:text-slate-400">{appointmentStatus.student?.externalId}</p>
+                            </div>
+                            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4">
+                                <p className="text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">Status</p>
+                                <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+                                    {STATUS_LABELS[appointmentStatus.appointment.status] || appointmentStatus.appointment.status}
+                                </p>
+                            </div>
+                            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4">
+                                <p className="text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">Appointment Time</p>
+                                <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+                                    {formatAppointmentDate(appointmentStatus.appointment)}
+                                </p>
+                            </div>
+                            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4">
+                                <p className="text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">Counselor</p>
+                                <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{appointmentStatus.appointment.counselorName || 'Assigned Counselor'}</p>
                             </div>
                         </div>
                     )}

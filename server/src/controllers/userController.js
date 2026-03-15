@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const CounselingAppointment = require('../models/CounselingAppointment');
 const { sendSuccess } = require('../utils/apiResponse');
 
 const getProfile = async (req, res, next) => {
@@ -71,4 +72,35 @@ const verifyAdmissionDocument = async (req, res, next) => {
     }
 };
 
-module.exports = { getProfile, validateStudent, verifyAdmissionDocument };
+const getAppointmentStatus = async (req, res, next) => {
+    try {
+        const { externalId } = req.params;
+        const normalizedId = externalId.trim().toUpperCase();
+
+        const user = await User.findOne({ externalId: normalizedId }).select('_id name email externalId');
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'Student ID not found.' });
+        }
+
+        const latestAppointment = await CounselingAppointment.findOne({ studentId: user._id })
+            .sort({ appointmentDate: -1, createdAt: -1 })
+            .select('appointmentDate dateString slotTime status counselorName mode requestReason contactEmail createdAt');
+
+        if (!latestAppointment) {
+            return res.status(404).json({ success: false, error: 'No appointments found for this Student ID.' });
+        }
+
+        sendSuccess(res, {
+            student: {
+                externalId: user.externalId,
+                name: user.name,
+                email: user.email,
+            },
+            appointment: latestAppointment,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { getProfile, validateStudent, verifyAdmissionDocument, getAppointmentStatus };
