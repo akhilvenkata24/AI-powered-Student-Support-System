@@ -1,72 +1,140 @@
-# 🎓 AI Student Support System
+# AI Student Support System
 
-A premium, full-stack AI-powered student support platform designed to assist university students with admissions, mental health, academics, and administrative queries.
+Full-stack student support platform with AI chat, admissions tracking, wellbeing workflows, and an admin operations panel.
 
-![Banner](file:///C:/Users/akhil/.gemini/antigravity/brain/e48cfc05-ba77-4b02-abab-f4bb035fc7d0/media__1773404420675.png)
+## Features
 
-## ✨ Features
+1. AI chat assistant with sentiment-aware support.
+2. Admissions tracking and document status experience.
+3. Mental wellbeing booking and counseling tools.
+4. Admin dashboard with FAQ management and case monitoring.
+5. Virtual counselor live room with transcript and session persistence.
 
-### 🤖 Intelligent AI Chatbot (CampusAI)
-- **Deep Sentiment Analysis**: Real-time detection of student stress and urgency.
-- **Multilingual Support**: Switch between 6+ languages seamlessly.
-- **Context-Aware Responses**: Powered by OpenAI/Groq models for high-quality reasoning.
-- **Urgent Priority Flags**: Automatically detects potential mental health crises and routes to human support channels.
+## Stack
 
-### 🏥 Mental Health & Wellness Center
-- **Live Appointment Booking**: Fully integrated with the backend and MongoDB.
-- **Crisis Directives**: Immediate access to hotlines and emergency resources.
-- **Confidential Support**: Privacy-first design for sensitive student communications.
+1. Frontend: React, Vite, Tailwind CSS.
+2. Backend: Node.js, Express.
+3. Database: MongoDB with Mongoose.
+4. AI: OpenAI API.
 
-### 📑 Dynamic Admissions Tracker
-- **Real-Time Progress**: Live tracking of application status (Applied → Under Review → Accepted).
-- **Document Checklist**: Automated tracking of submitted vs. pending documents.
-- **Persistent Student Identity**: Identity management that remembers student progress across sessions.
+## Local Setup
 
-### 👔 Admin Dashboard
-- **System-Wide Analytics**: Monitor total queries, active students, and urgent cases at a glance.
-- **Knowledge Base Manager**: Add and categorize FAQs to update the AI's training data live.
-- **Interaction Stream**: View real-time student-AI interactions and sentiment labels.
+1. Install dependencies from root:
 
-## 🛠️ Tech Stack
+```bash
+npm install
+```
 
-- **Frontend**: React, Vite, Tailwind CSS (Dark Glassmorphism UI), Lucide Icons.
-- **Backend**: Node.js, Express.js.
-- **Database**: MongoDB (Mongoose).
-- **AI Engine**: OpenAI API / Groq (Llama-3 Support).
-- **Architecture**: Modular Service Layer, Centralized Error Handling, Joi Validation.
+2. Create environment files:
 
-## 🚀 Getting Started
+```bash
+copy server\.env.example server\.env
+copy client\.env.example client\.env
+```
 
-### Prerequisites
-- Node.js (v18+)
-- MongoDB (Running locally on port 27017)
+3. Update server environment in server/.env:
 
-### Installation
+```env
+PORT=5000
+NODE_ENV=development
+MONGODB_URI=mongodb://localhost:27017/student-support
+OPENAI_API_KEY=your_openai_api_key
+ADMIN_AUTH_SECRET=replace_with_a_long_random_secret
+FRONTEND_URL=http://localhost:5173
+```
 
-1. **Clone the repository** (or navigate to the folder).
-2. **Install Root Dependencies**:
-   ```bash
-   npm install
-   ```
-3. **Configure the Server**:
-   Navigate to `server/.env` and add your credentials:
-   ```env
-   PORT=5000
-   MONGODB_URI=mongodb://localhost:27017/student-support
-   OPENAI_API_KEY=your_key_here
-   ```
-4. **Run the Application**:
-   From the root directory:
-   ```bash
-   npm run dev
-   ```
+4. Run app from root:
 
-## 📐 Professional Refactor Notes
-The backend has been refactored from a simple script into a production-ready architecture featuring:
-- **Centralized API Response Helpers** for unified frontend communication.
-- **Global Error Handling Middleware** to standardize all server exceptions.
-- **Student Profile Identity System** to link queries and appointments to persistent users.
-- **Clean Service Layer** to separate business logic from routing.
+```bash
+npm run dev
+```
 
----
-*Created with ❤️ for Advanced Student Support.*
+## Deployment Ready Changes Included
+
+1. Backend CORS is now environment-controlled using FRONTEND_URL or FRONTEND_URLS.
+2. Production trust-proxy support is enabled.
+3. Server and client environment templates are included.
+4. Entry page has light/dark theme toggle.
+
+## MongoDB Atlas Setup
+
+1. Go to MongoDB Atlas and create a new project.
+2. Create an M0 cluster.
+3. In Database Access, create a database user with password.
+4. In Network Access, add your deployment IP allow list.
+5. Open Connect > Drivers and copy the connection string.
+6. Replace username, password, and database name in the URI.
+
+Example:
+
+```env
+MONGODB_URI=mongodb+srv://YOUR_USER:YOUR_PASS@cluster0.xxxxx.mongodb.net/student-support?retryWrites=true&w=majority
+```
+
+## Recommended Deployment
+
+### Backend on Render
+
+1. Create a new Web Service from the server folder repo.
+2. Build Command:
+
+```bash
+npm install
+```
+
+3. Start Command:
+
+```bash
+npm start
+```
+
+4. Add environment variables:
+   1. NODE_ENV=production
+   2. PORT=10000 (or Render default)
+   3. OPENAI_API_KEY=your_key
+   4. MONGODB_URI=your_atlas_uri
+   5. ADMIN_AUTH_SECRET=long_random_secret
+   6. FRONTEND_URL=https://your-frontend-domain
+
+5. Deploy and verify health endpoint:
+
+```text
+https://your-backend-domain/health
+```
+
+### Frontend on Vercel
+
+1. Import the project and set Root Directory to client.
+2. Add environment variable:
+
+```env
+VITE_API_URL=https://your-backend-domain/api
+```
+
+3. Build command:
+
+```bash
+npm run build
+```
+
+4. Output directory:
+
+```text
+dist
+```
+
+5. Deploy.
+
+### Final CORS Alignment
+
+After frontend deploy is complete, update backend env:
+
+```env
+FRONTEND_URL=https://your-frontend-domain
+```
+
+If you use multiple domains:
+
+```env
+FRONTEND_URLS=https://your-frontend-domain,https://www.yourcustomdomain.com
+```

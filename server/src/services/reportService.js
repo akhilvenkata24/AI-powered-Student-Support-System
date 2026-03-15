@@ -7,16 +7,18 @@ const CounselingAppointment = require('../models/CounselingAppointment');
  * Service for generating administrative reports and dashboard stats
  */
 const getDashboardStats = async () => {
-    const [totalQueries, urgentQueries, faqCount, activeUsers] = await Promise.all([
+    const [totalQueries, urgentQueries, flaggedAppointments, faqCount, activeUsers] = await Promise.all([
         StudentQuery.countDocuments(),
         StudentQuery.countDocuments({ escalatedToHuman: true }),
+        CounselingAppointment.countDocuments({ flaggedForReview: true }),
         FAQ.countDocuments(),
         User.countDocuments()
     ]);
 
     return {
         totalQueries,
-        urgentQueries,
+        urgentQueries: urgentQueries + flaggedAppointments,
+        flaggedAppointments,
         faqCount,
         activeUsers: activeUsers || Math.floor(Math.random() * 50) + 10 // Fallback for demo
     };

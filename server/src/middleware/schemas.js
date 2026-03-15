@@ -1,7 +1,7 @@
 const Joi = require('joi');
 
 const chatSchema = Joi.object({
-    question: Joi.string().required().min(3),
+    question: Joi.string().required().min(1).max(2000),
     language: Joi.string().optional().default('English'),
     studentId: Joi.string().required(), // Now required for identity mapping
     category: Joi.string().optional().default('general')
@@ -21,8 +21,14 @@ const appointmentSchema = Joi.object({
     reason: Joi.string().required()
 });
 
+const adminLoginSchema = Joi.object({
+    username: Joi.string().trim().required(),
+    password: Joi.string().min(6).required()
+});
+
 module.exports = {
     chatSchema,
     faqSchema,
-    appointmentSchema
+    appointmentSchema,
+    adminLoginSchema
 };

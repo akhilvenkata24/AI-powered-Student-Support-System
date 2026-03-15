@@ -2,7 +2,7 @@ const StudentQuery = require('../models/StudentQuery');
 const FAQ = require('../models/FAQ');
 const CounselingAppointment = require('../models/CounselingAppointment');
 const reportService = require('../services/reportService');
-const { sendSuccess } = require('../utils/apiResponse');
+const { sendSuccess, sendError } = require('../utils/apiResponse');
 
 /**
  * @desc    Get dashboard statistics
@@ -55,6 +55,50 @@ const createFAQ = async (req, res, next) => {
 };
 
 /**
+ * @desc    Update an existing FAQ
+ */
+const updateFAQ = async (req, res, next) => {
+    try {
+        const { faqId } = req.params;
+        const { question, answer, category, tags } = req.body;
+
+        const faq = await FAQ.findById(faqId);
+        if (!faq) {
+            return sendError(res, 'FAQ not found.', 404);
+        }
+
+        faq.question = question;
+        faq.answer = answer;
+        faq.category = category;
+        faq.tags = tags || [];
+        await faq.save();
+
+        sendSuccess(res, faq);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Delete an FAQ
+ */
+const deleteFAQ = async (req, res, next) => {
+    try {
+        const { faqId } = req.params;
+        const faq = await FAQ.findById(faqId);
+
+        if (!faq) {
+            return sendError(res, 'FAQ not found.', 404);
+        }
+
+        await faq.deleteOne();
+        sendSuccess(res, { id: faqId });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
  * @desc    Get counseling appointments
  */
 const getAppointments = async (req, res, next) => {
@@ -95,10 +139,40 @@ const createAppointment = async (req, res, next) => {
             type,
             mode: 'virtual', // Default
             status: 'scheduled', 
+            contactEmail: email,
+            requestReason: reason,
             notes: `Reason: ${reason} | Contact Email: ${email}`
         });
         await newAppointment.save();
         sendSuccess(res, newAppointment, 201);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Flag or unflag an appointment for admin review
+ */
+const updateAppointmentFlag = async (req, res, next) => {
+    try {
+        const { appointmentId } = req.params;
+        const { flaggedForReview } = req.body;
+
+        if (typeof flaggedForReview !== 'boolean') {
+            return sendError(res, 'flaggedForReview must be a boolean.', 400);
+        }
+
+        const appointment = await CounselingAppointment.findById(appointmentId)
+            .populate('studentId', 'name email externalId');
+
+        if (!appointment) {
+            return sendError(res, 'Appointment not found.', 404);
+        }
+
+        appointment.flaggedForReview = flaggedForReview;
+        await appointment.save();
+
+        sendSuccess(res, appointment);
     } catch (error) {
         next(error);
     }
@@ -109,6 +183,9 @@ module.exports = {
     getQueries,
     getFAQs,
     createFAQ,
+    updateFAQ,
+    deleteFAQ,
     getAppointments,
-    createAppointment
+    createAppointment,
+    updateAppointmentFlag
 };

@@ -1,313 +1,192 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { HeartPulse, CalendarDays, Clock, MessageSquare, CheckCircle2, X } from 'lucide-react';
-import { createAppointment, getAppointments } from '../services/api';
+import { Heart, Calendar, CheckCircle, Info, ShieldCheck } from 'lucide-react';
+import api from '../services/api';
+import ParticleBackground from '../components/common/ParticleBackground';
 
 const MentalHealth = () => {
     const [isBooking, setIsBooking] = useState(false);
     const [bookingSuccess, setBookingSuccess] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showHours, setShowHours] = useState(false);
-    
-    const [formData, setFormData] = useState({ studentId: '', email: '', reason: '' });
-    const [selectedDate, setSelectedDate] = useState('');
-    const [selectedTime, setSelectedTime] = useState('');
-    const [dateError, setDateError] = useState('');
-    const [bookedTimes, setBookedTimes] = useState([]);
+    const [showTimings, setShowTimings] = useState(false);
+    const [bookingData, setBookingData] = useState({
+        studentName: '',
+        email: '',
+        appointmentDate: '',
+        reason: 'anxiety'
+    });
 
-    const resources = [
-        { id: 'counseling', icon: CalendarDays, title: 'Schedule Therapy', desc: '30-minute in-person sessions with licensed campus counselors.', color: 'from-violet-500 to-indigo-500', glow: 'rgba(139,92,246,0.35)', cta: 'Book Appointment', ctaStyle: 'btn-primary' },
-        { id: 'walkin', icon: Clock, title: 'Walk-In Consultations', desc: 'Walk in Mon–Fri, 1–4 PM at Student Union, Room 302. No appointment needed.', color: 'from-blue-500 to-cyan-400', glow: 'rgba(59,130,246,0.35)', cta: 'View Hours', ctaStyle: 'btn-ghost' },
-    ];
-
-    // Fetch booked slots when booking modal opens
-    useEffect(() => {
-        if (isBooking) {
-            getAppointments().then(res => {
-                if (res.data) {
-                    const booked = res.data.map(app => {
-                        const date = new Date(app.appointmentDate);
-                        const tzOffset = date.getTimezoneOffset() * 60000;
-                        return new Date(date - tzOffset).toISOString().slice(0, 16);
-                    });
-                    setBookedTimes(booked);
-                }
-            }).catch(err => console.error("Could not fetch appointments", err));
-        }
-    }, [isBooking]);
-
-    const getMinDate = () => {
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        return now.toISOString().slice(0, 10);
-    };
-
-    const handleDateChange = (e) => {
-        const val = e.target.value;
-        if (!val) {
-            setSelectedDate('');
-            setSelectedTime('');
-            setDateError('');
-            return;
-        }
-        const [year, month, ds] = val.split('-');
-        const selectedDateObj = new Date(year, month - 1, ds);
-        const day = selectedDateObj.getDay();
-
-        // 0 = Sunday, 6 = Saturday
-        if (day === 0 || day === 6) {
-            setDateError('Appointments cannot be booked on weekends.');
-            setSelectedDate('');
-            setSelectedTime('');
-            return;
-        }
-
-        setDateError('');
-        setSelectedDate(val);
-        setSelectedTime('');
-    };
-
-    const generateTimeSlots = () => {
-        const slots = [];
-        for (let h = 9; h <= 16; h++) {
-            const hour = h.toString().padStart(2, '0');
-            slots.push(`${hour}:00`);
-            slots.push(`${hour}:30`);
-        }
-        return slots;
-    };
-
-    const handleBooking = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (dateError || !selectedDate || !selectedTime) {
-            alert(dateError || "Please select a valid date and time slot.");
-            return;
-        }
-
-        const appointmentDateISO = `${selectedDate}T${selectedTime}`;
-
         setIsSubmitting(true);
         try {
-            await createAppointment({ ...formData, appointmentDate: appointmentDateISO });
+            await api.post('/admin/appointments', bookingData);
             setBookingSuccess(true);
             setTimeout(() => {
                 setIsBooking(false);
                 setBookingSuccess(false);
-                setFormData({ studentId: '', email: '', reason: '' });
-                setSelectedDate('');
-                setSelectedTime('');
-                setDateError('');
+                setBookingData({ studentName: '', email: '', appointmentDate: '', reason: 'anxiety' });
             }, 3000);
-        } catch (error) {
-            const msg = error.response?.data?.message || "Booking failed. Please check if the backend is running.";
-            alert(msg);
+        } catch {
+            alert("System error. Please call the hotline for immediate assistance.");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleCtaClick = (id) => {
-        if (id === 'counseling') {
-            setIsBooking(true);
-        } else if (id === 'walkin') {
-            setShowHours(true);
-            setTimeout(() => {
-                const hoursSection = document.getElementById('hours');
-                hoursSection?.scrollIntoView({ behavior: 'smooth' });
-            }, 100);
-        }
-    };
-
     return (
-        <div className="relative min-h-[calc(100vh-64px)] overflow-hidden">
-
-            {/* bg blobs */}
-            <div className="pointer-events-none absolute inset-0 -z-10">
-                <div className="float-anim absolute top-0 right-0 w-80 h-80 bg-rose-600/15 rounded-full blur-3xl" />
-                <div className="float-anim-delay absolute bottom-0 left-0 w-72 h-72 bg-pink-600/10 rounded-full blur-3xl" />
-            </div>
-
-            <div className="max-w-3xl mx-auto px-4 sm:px-6 py-14 space-y-8">
-
-                {/* Header */}
-                <div className="text-center space-y-4">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-2"
-                        style={{ background: 'linear-gradient(135deg,#f43f5e,#ec4899)', boxShadow: '0 8px 30px rgba(244,63,94,0.4)' }}>
-                        <HeartPulse className="w-8 h-8 text-white" />
+        <div className="pt-24 md:pt-32 pb-20 px-4 min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300 relative overflow-hidden">
+            <ParticleBackground variant="low" />
+            <div className="max-w-5xl mx-auto space-y-16 relative z-10">
+                
+                {/* ── Hero Section ───────────────────────────────────── */}
+                <div className="text-center space-y-6 animate-in fade-in slide-in-from-top-10 duration-1000">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-xs font-bold uppercase tracking-widest shadow-sm">
+                        <Heart className="w-3.5 h-3.5 fill-current" />
+                        Confidential Support
                     </div>
-                    <h1 className="text-4xl font-black font-[Outfit] text-white">Student Wellbeing Center</h1>
-                    <p className="text-white/50 max-w-xl mx-auto leading-relaxed">
-                        Free, confidential mental health support for every enrolled student. You are not alone.
+                    <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white tracking-tight leading-[1.1]">
+                        Priority: <br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-rose-400">Your Wellbeing</span>
+                    </h1>
+                    <p className="max-w-2xl mx-auto text-slate-600 dark:text-slate-400 text-lg font-medium leading-relaxed">
+                        Access dedicated mental health resources, anonymous counseling, and professional support tailored for the student journey.
                     </p>
+                    <div className="pt-4">
+                        <button 
+                            onClick={() => setIsBooking(true)}
+                            className="btn-primary !bg-rose-600 hover:!bg-rose-700 !px-10 !py-4 !rounded-xl !text-base group shadow-sm"
+                        >
+                            Request Private Session
+                            <Calendar className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                        </button>
+                    </div>
                 </div>
 
-                {/* Service Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    {resources.map(({ id, icon: Icon, title, desc, color, glow, cta, ctaStyle }) => (
-                        <div key={title} className="glass-card p-6 flex flex-col gap-4">
-                            <div className={`self-start p-3 rounded-xl bg-gradient-to-br ${color}`}
-                                style={{ boxShadow: `0 6px 20px ${glow}` }}>
-                                <Icon className="w-6 h-6 text-white" />
+                {/* ── Walk-In Counseling ────────────────────────────── */}
+                <div className="card-base p-8 md:p-12 relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm mt-12">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                            <div className="w-14 h-14 bg-rose-50 dark:bg-rose-900/20 rounded-xl flex items-center justify-center border border-rose-100 dark:border-rose-800/50 flex-shrink-0">
+                                <Info className="w-7 h-7 text-rose-600 dark:text-rose-400" />
                             </div>
-                            <div>
-                                <h3 className="font-bold text-white text-lg font-[Outfit]">{title}</h3>
-                                <p className="text-white/50 text-sm mt-1 leading-relaxed">{desc}</p>
+                            <div className="space-y-2">
+                                <h3 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Walk-In Counseling</h3>
+                                <p className="text-slate-600 dark:text-slate-400 font-medium max-w-xl text-base leading-relaxed">
+                                    Need immediate support? Drop by our campus center for same-day triage and consultation. No prior appointment is necessary.
+                                </p>
                             </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-4 shrink-0">
                             <button 
-                                onClick={() => handleCtaClick(id)}
-                                className={`${ctaStyle} mt-auto text-sm`}
+                                className="px-6 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm flex items-center gap-2 whitespace-nowrap"
+                                onClick={() => setShowTimings(!showTimings)}
                             >
-                                {cta}
+                                <Calendar className="w-5 h-5" />
+                                {showTimings ? 'Hide Timings' : 'View Timings'}
                             </button>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Hours */}
-                {showHours && (
-                    <div id="hours" className="glass-card p-6 scroll-mt-24 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex justify-between items-center mb-4">
-                            <h4 className="font-bold text-white font-[Outfit]">Counseling Hours</h4>
-                            <button onClick={() => setShowHours(false)} className="text-white/40 hover:text-white transition-colors">
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                            {[['Monday – Thursday', '9 AM – 7 PM'], ['Friday', '9 AM – 5 PM'], ['Saturday', '10 AM – 2 PM'], ['Sunday / Holidays', 'Crisis Line Only']].map(([day, time]) => (
-                                <div key={day} className="flex items-center gap-3 p-3 bg-white/3 rounded-xl border border-white/8">
-                                    <Clock className="w-4 h-4 text-violet-400 flex-shrink-0" />
-                                    <div>
-                                        <p className="text-white/70 font-medium">{day}</p>
-                                        <p className="text-white/40 text-xs">{time}</p>
-                                    </div>
-                                </div>
-                            ))}
                         </div>
                     </div>
-                )}
-
-                <div className="text-center">
-                    <Link to="/chat" className="btn-ghost text-sm gap-2">
-                        <MessageSquare className="w-4 h-4" /> Chat with AI for Resources
-                    </Link>
+                    {showTimings && (
+                        <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row gap-6 justify-between animate-in fade-in slide-in-from-top-4 relative z-10 bg-slate-50 dark:bg-slate-950/50 p-6 rounded-xl">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 bg-rose-100 dark:bg-rose-900/30 rounded-lg flex items-center justify-center shrink-0">
+                                    <Calendar className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm">Operating Hours</h4>
+                                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Monday - Friday: 9:00 AM - 4:00 PM</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 bg-brand-primary/10 dark:bg-brand-secondary/20 rounded-lg flex items-center justify-center shrink-0">
+                                    <Info className="w-5 h-5 text-brand-primary dark:text-brand-secondary" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm">Location</h4>
+                                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Student Wellness Center, Room 204</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-
             </div>
 
-            {/* Booking Modal */}
+            {/* ── Booking Modal ─────────────────────────────────────── */}
             {isBooking && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !isSubmitting && setIsBooking(false)} />
-                    <div className="glass-card w-full max-w-lg relative p-8 animate-in fade-in zoom-in duration-200 hide-scrollbar overflow-y-auto max-h-[90vh]">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => !isSubmitting && setIsBooking(false)} />
+                    <div className="card-base w-full max-w-2xl relative overflow-hidden flex flex-col max-h-[90vh] bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 rounded-2xl">
                         {bookingSuccess ? (
-                            <div className="text-center py-6">
-                                <div className="w-16 h-16 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <CheckCircle2 className="w-8 h-8" />
+                            <div className="p-12 text-center space-y-6 animate-in zoom-in duration-500">
+                                <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto border border-emerald-100 dark:border-emerald-800/50 shadow-sm">
+                                    <CheckCircle className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-1">Appointment Set!</h3>
-                                <p className="text-white/50 text-sm">Check your email for confirmation.</p>
+                                <div className="space-y-3">
+                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Request Received</h3>
+                                    <p className="text-slate-600 dark:text-slate-400 font-medium text-sm">A counselor will reach out to you via email within 2 hours. Hang in there.</p>
+                                </div>
+                                <div className="pt-4 flex justify-center gap-3">
+                                    <div className="px-3 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider rounded-lg">Confirmed</div>
+                                    <div className="px-3 py-1 bg-brand-primary/10 text-brand-primary dark:bg-brand-secondary/20 dark:text-brand-secondary text-xs font-bold uppercase tracking-wider rounded-lg">Private</div>
+                                </div>
                             </div>
                         ) : (
                             <>
-                                <button 
-                                    onClick={() => setIsBooking(false)}
-                                    className="absolute top-4 right-4 text-white/40 hover:text-white"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                                <h3 className="text-xl font-black text-white mb-6 font-[Outfit]">Book a Session</h3>
-                                <form onSubmit={handleBooking} className="space-y-4">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-[10px] font-bold uppercase tracking-wider text-white/30 mb-1 ml-1">Student ID</label>
-                                            <input 
-                                                type="text" required className="dark-input !py-2.5 !text-sm" placeholder="e.g. STU882910"
-                                                value={formData.studentId}
-                                                onChange={(e) => setFormData({...formData, studentId: e.target.value})}
-                                            />
+                                <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-rose-600 flex items-center justify-center shadow-sm">
+                                            <Calendar className="w-5 h-5 text-white" />
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold uppercase tracking-wider text-white/30 mb-1 ml-1">Contact Email</label>
-                                            <input 
-                                                type="email" required className="dark-input !py-2.5 !text-sm" placeholder="john@university.edu"
-                                                value={formData.email}
-                                                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                            />
+                                            <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">Private Session</h3>
+                                            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-0.5">Counseling Intake Form</p>
                                         </div>
                                     </div>
-                                    
-                                    <div>
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-white/30 mb-1 ml-1">Reason</label>
-                                        <select 
-                                            required className="dark-input !py-2.5 !text-sm"
-                                            value={formData.reason}
-                                            onChange={(e) => setFormData({...formData, reason: e.target.value})}
-                                        >
-                                            <option value="" className="bg-[#1a1a2e]">Select reason</option>
-                                            <option value="Academic Support" className="bg-[#1a1a2e]">Academic Stress</option>
-                                            <option value="Personal Wellness" className="bg-[#1a1a2e]">Personal Wellness</option>
-                                            <option value="Career Anxiety" className="bg-[#1a1a2e]">Career Anxiety</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-white/30 mb-1 ml-1">Select Date</label>
-                                        <input 
-                                            type="date" 
-                                            required 
-                                            className="dark-input !py-2.5 !text-sm"
-                                            style={{ colorScheme: 'dark' }} 
-                                            min={getMinDate()}
-                                            value={selectedDate}
-                                            onChange={handleDateChange}
-                                        />
-                                        {dateError && <p className="text-rose-400 text-xs mt-1.5 ml-1">{dateError}</p>}
-                                    </div>
-
-                                    {selectedDate && !dateError && (
-                                        <div>
-                                            <label className="block text-[10px] font-bold uppercase tracking-wider text-white/30 mb-2 ml-1">Available Time Slots</label>
-                                            <div className="grid grid-cols-4 gap-2">
-                                                {generateTimeSlots().map(time => {
-                                                    const datetimeStr = `${selectedDate}T${time}`;
-                                                    const isBooked = bookedTimes.includes(datetimeStr);
-                                                    
-                                                    const now = new Date();
-                                                    const tzOffset = now.getTimezoneOffset() * 60000;
-                                                    const localNow = new Date(now - tzOffset).toISOString().slice(0, 16);
-                                                    const isPast = datetimeStr < localNow;
-
-                                                    const isDisabled = isBooked || isPast;
-
-                                                    return (
-                                                        <button 
-                                                            key={time}
-                                                            type="button"
-                                                            disabled={isDisabled}
-                                                            onClick={() => setSelectedTime(time)}
-                                                            className={`py-2 text-xs rounded-xl border transition-colors ${
-                                                                isDisabled ? 'bg-white/5 border-rose-500/20 text-rose-400 cursor-not-allowed opacity-50' :
-                                                                selectedTime === time ? 'bg-violet-500 border-violet-400 text-white' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
-                                                            }`}
-                                                        >
-                                                            {time}
-                                                            {isDisabled && <span className="block text-[8px] uppercase mt-0.5 font-bold">{isBooked ? 'Occupied' : 'Passed'}</span>}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                            {!selectedTime && <p className="text-violet-300 text-xs mt-2 ml-1">Please select a time slot to continue.</p>}
-                                        </div>
-                                    )}
-
-                                    <button 
-                                        type="submit" 
-                                        disabled={isSubmitting || !!dateError || !selectedTime}
-                                        className="w-full btn-primary mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {isSubmitting ? 'Confirming...' : 'Confirm Appointment'}
+                                    <button onClick={() => setIsBooking(false)} className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                                        <Heart className="w-5 h-5" />
                                     </button>
-                                </form>
+                                </div>
+
+                                <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar">
+                                    <form onSubmit={handleSubmit} className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold uppercase tracking-wide text-slate-700 dark:text-slate-300 ml-1">Full Name (Confidential)</label>
+                                                <input required className="input-base text-sm" placeholder="e.g. Alex Johnson" value={bookingData.studentName} onChange={e => setBookingData({...bookingData, studentName: e.target.value})} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold uppercase tracking-wide text-slate-700 dark:text-slate-300 ml-1">Student Email</label>
+                                                <input required type="email" className="input-base text-sm" placeholder="e.g. alex@university.edu" value={bookingData.email} onChange={e => setBookingData({...bookingData, email: e.target.value})} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold uppercase tracking-wide text-slate-700 dark:text-slate-300 ml-1">Preferred Date</label>
+                                                <input required type="date" className="input-base text-sm" value={bookingData.appointmentDate} onChange={e => setBookingData({...bookingData, appointmentDate: e.target.value})} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold uppercase tracking-wide text-slate-700 dark:text-slate-300 ml-1">Primary Concern</label>
+                                                <select className="input-base text-sm" value={bookingData.reason} onChange={e => setBookingData({...bookingData, reason: e.target.value})}>
+                                                    <option value="anxiety">Academic Anxiety</option>
+                                                    <option value="personal">Personal Wellbeing</option>
+                                                    <option value="stress">General Stress</option>
+                                                    <option value="other">Other Concerns</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="pt-4">
+                                            <button 
+                                                type="submit" 
+                                                disabled={isSubmitting}
+                                                className="btn-primary w-full !bg-rose-600 hover:!bg-rose-700 !py-4 rounded-xl text-base shadow-sm"
+                                            >
+                                                {isSubmitting ? 'Securing Channel...' : 'Secure My Appointment'}
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-semibold tracking-wide mt-4">
+                                            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                                            Your privacy is our highest priority
+                                        </div>
+                                    </form>
+                                </div>
                             </>
                         )}
                     </div>

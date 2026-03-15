@@ -30,6 +30,16 @@ const counselingAppointmentSchema = new mongoose.Schema({
         enum: ['scheduled', 'completed', 'cancelled', 'no_show'],
         default: 'scheduled',
     },
+    contactEmail: {
+        type: String,
+    },
+    requestReason: {
+        type: String,
+    },
+    flaggedForReview: {
+        type: Boolean,
+        default: false,
+    },
     notes: {
         type: String,
         // Any notes the student provided when booking (or counselor notes after, if expanded)

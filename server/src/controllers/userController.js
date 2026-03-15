@@ -29,6 +29,22 @@ const getProfile = async (req, res, next) => {
     }
 };
 
+const validateStudent = async (req, res, next) => {
+    try {
+        const { externalId } = req.params;
+        const normalizedId = externalId.trim().toUpperCase();
+        const user = await User.findOne({ externalId: normalizedId });
+
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'Student ID not found.' });
+        }
+
+        sendSuccess(res, user);
+    } catch (error) {
+        next(error);
+    }
+};
+
 const verifyAdmissionDocument = async (req, res, next) => {
     try {
         const { content } = req.body;
@@ -55,4 +71,4 @@ const verifyAdmissionDocument = async (req, res, next) => {
     }
 };
 
-module.exports = { getProfile, verifyAdmissionDocument };
+module.exports = { getProfile, validateStudent, verifyAdmissionDocument };

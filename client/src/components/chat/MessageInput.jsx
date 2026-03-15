@@ -1,108 +1,72 @@
-import { useState, useEffect, useRef } from 'react';
-import { Send, Mic, MicOff, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect } from "react";
+import { Send, Sparkles, Languages, Mic, Command } from "lucide-react";
 
 const MessageInput = ({ onSendMessage, isLoading }) => {
-    const [input, setInput] = useState('');
-    const [isListening, setIsListening] = useState(false);
-    const recognitionRef = useRef(null);
+    const [message, setMessage] = useState("");
     const textareaRef = useRef(null);
 
+    // Auto-resize textarea
     useEffect(() => {
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            recognitionRef.current = new SR();
-            recognitionRef.current.continuous = false;
-            recognitionRef.current.interimResults = true;
-            recognitionRef.current.onresult = (e) => {
-                const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
-                setInput(transcript);
-            };
-            recognitionRef.current.onend = () => setIsListening(false);
+        if (textareaRef.current) {
+            textareaRef.current.style.height = "auto";
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
         }
-    }, []);
+    }, [message]);
 
-    const handleSend = () => {
-        if (input.trim() && !isLoading) {
-            onSendMessage(input.trim());
-            setInput('');
-            if (isListening) {
-                recognitionRef.current?.stop();
-                setIsListening(false);
-            }
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (message.trim() && !isLoading) {
+            onSendMessage(message);
+            setMessage("");
         }
     };
 
     const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            handleSend();
+            handleSubmit(e);
         }
     };
-
-    const toggleVoice = () => {
-        if (!recognitionRef.current) return;
-        if (isListening) {
-            recognitionRef.current.stop();
-        } else {
-            recognitionRef.current.start();
-            setIsListening(true);
-        }
-    };
-
-    // Auto-resize textarea
-    useEffect(() => {
-        const ta = textareaRef.current;
-        if (ta) {
-            ta.style.height = 'auto';
-            ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
-        }
-    }, [input]);
 
     return (
-        <div className={`flex items-end gap-3 p-3 rounded-2xl border transition-all duration-300 ${
-            isListening
-                ? 'border-rose-500/50 bg-rose-500/5 shadow-[0_0_20px_rgba(244,63,94,0.15)]'
-                : 'border-white/10 bg-white/5'
-        }`}>
-            {/* Voice Button */}
-            <button
-                onClick={toggleVoice}
-                className={`flex-shrink-0 p-2.5 rounded-xl transition-all duration-300 ${
-                    isListening
-                        ? 'bg-rose-500 text-white animate-pulse-glow'
-                        : 'text-white/40 hover:text-white hover:bg-white/10'
-                }`}
-            >
-                {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-            </button>
+        <form 
+            onSubmit={handleSubmit} 
+            className="relative flex items-end gap-3 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full transition-all focus-within:border-brand-primary/50 focus-within:ring-4 focus-within:ring-brand-primary/10 shadow-sm"
+        >
+            <div className="flex-1 min-h-[50px] flex items-center px-4">
+                <textarea
+                    ref={textareaRef}
+                    rows="1"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type your question here..."
+                    className="w-full bg-transparent border-none focus:ring-0 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 py-3 resize-none max-h-40 font-medium text-sm scrollbar-hide outline-none"
+                    disabled={isLoading}
+                />
+            </div>
 
-            {/* Textarea */}
-            <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={isListening ? '🎙 Listening…' : 'Ask anything about campus…'}
-                rows={1}
-                className="flex-1 bg-transparent text-white placeholder-white/30 outline-none resize-none text-sm leading-relaxed max-h-28 py-1.5"
-            />
-
-            {/* Send Button */}
-            <button
-                onClick={handleSend}
-                disabled={!input.trim() || isLoading}
-                className="flex-shrink-0 p-2.5 rounded-xl transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
-                style={{
-                    background: input.trim() && !isLoading ? 'linear-gradient(135deg,#667eea,#764ba2)' : 'rgba(255,255,255,0.08)',
-                    boxShadow: input.trim() && !isLoading ? '0 4px 15px rgba(102,126,234,0.5)' : 'none',
-                }}
-            >
-                {isLoading
-                    ? <Loader2 className="w-5 h-5 text-white animate-spin" />
-                    : <Send className="w-5 h-5 text-white" />
-                }
-            </button>
-        </div>
+            <div className="flex items-center gap-2 p-1.5 translate-x-1">
+                <div className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest border border-transparent">
+                    <Command className="w-3 h-3" /> return to send
+                </div>
+                <button
+                    type="submit"
+                    disabled={!message.trim() || isLoading}
+                    className={`flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 shadow-sm ${
+                        message.trim() && !isLoading 
+                        ? "bg-gradient-to-r from-blue-700 to-blue-500 hover:from-blue-600 hover:to-blue-400 text-white scale-100 shadow-brand-primary/20 hover:shadow-md" 
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 scale-95 shadow-none"
+                    }`}
+                >
+                    {isLoading ? (
+                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    ) : (
+                        <Send className="w-5 h-5 translate-x-0.5 -translate-y-0.5" />
+                    )}
+                </button>
+            </div>
+        </form>
     );
 };
 

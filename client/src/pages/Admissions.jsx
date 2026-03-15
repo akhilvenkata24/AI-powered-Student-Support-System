@@ -1,20 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle, Clock, FilePlus, MessageSquare, Activity, UserCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle, Clock, FilePlus, MessageSquare, Activity, UserCheck, ArrowRight, ShieldCheck, Download, Info, GraduationCap, Bot } from 'lucide-react';
 import api from '../services/api';
+import ParticleBackground from '../components/common/ParticleBackground';
 
 const Admissions = () => {
     const [profile, setProfile] = useState(null);
     const [isVerified, setIsVerified] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState('');
     const [studentIdInput, setStudentIdInput] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
-        console.log("Admissions Portal Mounted. Profile verified:", isVerified);
         setIsLoading(false);
     }, []);
 
@@ -27,196 +26,206 @@ const Admissions = () => {
         
         try {
             const res = await api.get(`/user/profile/${studentIdInput}`);
-            console.log("Verification success:", res.data.data.externalId);
             setProfile(res.data.data);
             setIsVerified(true);
         } catch (err) {
-            setUploadError(err.response?.data?.error || 'Verification failed. Please check your Student ID.');
+            setUploadError(err.response?.data?.error || 'Account not found. Verify your ID.');
         } finally {
             setUploading(false);
         }
     };
 
     const STATUS_MAP = {
-        applied: { label: 'Application Submitted', color: 'blue' },
-        under_review: { label: 'Application Under Review', color: 'yellow' },
-        accepted: { label: 'Accepted!', color: 'emerald' },
-        rejected: { label: 'Decision Released', color: 'rose' },
+        applied: { label: 'Application Filed', color: 'indigo', icon: Clock },
+        under_review: { label: 'Review Pending', color: 'amber', icon: Activity },
+        accepted: { label: 'Admission Offered', color: 'emerald', icon: CheckCircle },
+        rejected: { label: 'Decision Released', color: 'rose', icon: Info },
     };
 
     const handleDiscuss = () => {
         if (!profile) return;
-        const pendingDocs = (profile.documents || [])
-            .filter(d => d.status !== 'received')
-            .map(d => d.name);
-
-        let initialPrompt = `Hello, I am checking my admission status. My student ID is ${profile.externalId} and my application is currently ${profile.admissionStatus.replace('_', ' ')}. `;
-        
-        if (pendingDocs.length > 0) {
-            initialPrompt += `I still need to submit the following documents: ${pendingDocs.join(', ')}. Could you suggest exactly what I need to do next, how to obtain them, and when to upload them?`;
-        } else {
-            initialPrompt += `I have submitted all required documents! What are the next steps in the admission process?`;
-        }
-
+        const pendingDocs = (profile.documents || []).filter(d => d.status !== 'received').map(d => d.name);
+        let initialPrompt = `Hi, I'm checking my status (ID: ${profile.externalId}). Status: ${profile.admissionStatus.replace('_', ' ')}. `;
+        if (pendingDocs.length > 0) initialPrompt += `I need help with these documents: ${pendingDocs.join(', ')}.`;
         navigate('/chat', { state: { initialPrompt } });
     };
 
     if (isLoading) return (
-        <div className="flex h-[calc(100vh-64px)] items-center justify-center">
-            <Activity className="w-8 h-8 animate-spin text-blue-400" />
+        <div className="flex h-[calc(100vh-64px)] items-center justify-center bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+            <div className="w-10 h-10 border-4 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin" />
         </div>
     );
 
     const status = STATUS_MAP[profile?.admissionStatus || 'applied'];
     const docs = profile?.documents || [];
     const completedCount = docs.filter(d => d.status === 'received').length;
+    const progress = Math.round((completedCount / (docs.length || 1)) * 100);
 
     return (
-        <div className="relative min-h-[calc(100vh-64px)] overflow-hidden">
-            <div className="pointer-events-none absolute inset-0 -z-10">
-                <div className="float-anim absolute -top-20 right-0 w-80 h-80 bg-blue-600/15 rounded-full blur-3xl" />
-                <div className="float-anim-delay absolute bottom-0 left-10 w-72 h-72 bg-cyan-600/10 rounded-full blur-3xl" />
-            </div>
-
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 py-14 space-y-8">
+        <div className="pt-24 md:pt-32 pb-20 px-4 min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300 relative overflow-hidden">
+            <ParticleBackground variant="low" />
+            <div className="max-w-5xl mx-auto space-y-12 relative z-10">
                 
-                {/* Initial Instruction (Shown when no profile is verified) */}
-                {!isVerified && (
-                    <div className="text-center space-y-4 py-10">
-                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl mb-4 bg-blue-500/10 border border-blue-500/20 shadow-2xl">
-                            <FilePlus className="w-10 h-10 text-blue-400" />
+                {/* ── Header ─────────────────────────────────────────── */}
+                {!isVerified ? (
+                    <div className="text-center space-y-6 animate-in fade-in slide-in-from-top-10 duration-700">
+                        <div className="w-20 h-20 bg-brand-primary/10 dark:bg-brand-secondary/20 border border-brand-primary/20 dark:border-brand-secondary/30 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                            <ShieldCheck className="w-10 h-10 text-brand-primary dark:text-brand-secondary" />
                         </div>
-                        <h1 className="text-5xl font-black font-[Outfit] text-white tracking-tight">Admissions Portal</h1>
-                        <p className="text-white/40 max-w-lg mx-auto leading-relaxed">
-                            To track your application progress, please verify your identity by entering your 
-                            <span className="text-blue-400 font-semibold px-1">Student ID</span> below.
+                        <h1 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white tracking-tight">
+                            Admissions <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-brand-secondary">Portal</span>
+                        </h1>
+                        <p className="text-slate-600 dark:text-slate-400 text-lg max-w-xl mx-auto font-medium leading-relaxed">
+                            Access secure records and real-time application tracking using your University Credentials.
                         </p>
+                    </div>
+                ) : (
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 card-base p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <div className="flex items-center gap-5">
+                            <div className="w-14 h-14 bg-brand-primary/10 dark:bg-brand-secondary/20 border border-brand-primary/20 dark:border-brand-secondary/30 rounded-xl flex items-center justify-center">
+                                <GraduationCap className="w-7 h-7 text-brand-primary dark:text-brand-secondary" />
+                            </div>
+                            <div className="space-y-1">
+                                <div className={`badge-${status.color} mb-1 inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md`}>
+                                    <status.icon className="w-3.5 h-3.5" />
+                                    {status.label}
+                                </div>
+                                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                                    Hi, {profile.name.split(' ')[0]}
+                                </h1>
+                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                                    Student ID: {profile.externalId}
+                                </p>
+                            </div>
+                        </div>
+                        <button onClick={() => setIsVerified(false)} className="px-6 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
+                            Logout Portal
+                        </button>
                     </div>
                 )}
 
-                {/* Verification Section */}
-                <div className={`glass-card p-8 border-dashed border-2 transition-all text-center ${!isVerified ? 'border-blue-500/40 bg-blue-500/5' : 'border-white/10 opacity-60 hover:opacity-100'}`}>
-                    <h3 className="font-bold text-white mb-2 font-[Outfit]">Verify Application Status</h3>
-                    <p className="text-white/40 text-sm mb-6 max-w-md mx-auto">Enter your Student ID to unlock your live application tracking dashboard.</p>
-                    <form onSubmit={handleVerify} className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
-                        <input 
-                            type="text" 
-                            className="dark-input flex-1 !py-3 !text-sm" 
-                            placeholder="e.g. STU882910"
-                            value={studentIdInput}
-                            onChange={(e) => setStudentIdInput(e.target.value)}
-                            disabled={uploading}
-                            required
-                        />
-                        <button 
-                            type="submit"
-                            className="btn-primary gap-2 px-8 py-3 rounded-2xl shadow-xl hover:shadow-blue-500/20 whitespace-nowrap"
-                            disabled={uploading || !studentIdInput.trim()}
-                        >
-                            <UserCheck className="w-5 h-5" />
-                            {uploading ? 'Verifying...' : 'Verify ID'}
-                        </button>
-                    </form>
-                    {uploadError && (
-                        <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold animate-in fade-in slide-in-from-top-2 max-w-md mx-auto">
-                            ⚠️ {uploadError}
+                {/* ── Identity Verification ──────────────────────────── */}
+                {!isVerified && (
+                    <div className="card-base p-10 md:p-16 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden max-w-2xl mx-auto">
+                        <div className="space-y-8 relative z-10">
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Secure Access Required</h3>
+                                <p className="text-slate-600 dark:text-slate-400 text-sm px-4">Enter the 9-digit Student ID sent to your registered email address.</p>
+                            </div>
+                            <form onSubmit={handleVerify} className="space-y-6">
+                                <input 
+                                    type="text" 
+                                    className="input-base text-center text-xl font-bold tracking-[0.2em] placeholder:tracking-normal placeholder:font-medium uppercase" 
+                                    placeholder="STUXXXXXX"
+                                    value={studentIdInput}
+                                    onChange={(e) => setStudentIdInput(e.target.value)}
+                                    disabled={uploading}
+                                    required
+                                />
+                                <button 
+                                    type="submit"
+                                    className="btn-primary w-full group py-4 text-base"
+                                    disabled={uploading || !studentIdInput.trim()}
+                                >
+                                    {uploading ? 'Authenticating...' : 'Access Dashboard'}
+                                    {!uploading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+                                </button>
+                            </form>
+                            {uploadError && (
+                                <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-900/30 border border-rose-100 dark:border-rose-800/50 text-rose-600 dark:text-rose-400 text-xs font-bold uppercase tracking-wider">
+                                    {uploadError}
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
 
+                {/* ── Portal Dashboard ──────────────────────────────── */}
                 {isVerified && profile && (
-                    <div className="animate-in fade-in slide-in-from-bottom-6 duration-700 space-y-8">
-                        {/* Status Card */}
-                        <div className="glass-card p-10 border-l-8 border-blue-600 shadow-[0_20px_50px_rgba(37,99,235,0.15)] relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <Activity className="w-40 h-40" />
-                            </div>
-                            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                <div>
-                                    <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-${status.color}-300 bg-${status.color}-500/10 border border-${status.color}-500/20 mb-6`}>
-                                        <Clock className="w-4 h-4" /> {status.label}
-                                    </div>
-                                    <h2 className="text-4xl font-black font-[Outfit] text-white">Student Dashboard</h2>
-                                    <p className="text-white/50 mt-3 text-lg">
-                                        Welcome, <span className="text-blue-400 font-black">{profile.name}</span>
-                                    </p>
-                                    <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-white/20 uppercase tracking-[0.2em]">
-                                        Verified Identity · <span className="text-blue-500/50">{profile.externalId}</span>
-                                    </div>
-                                </div>
-                                <div className="hidden lg:block">
-                                    <div className="text-right">
-                                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">Decision Status</p>
-                                        <p className={`text-2xl font-black font-[Outfit] text-${status.color}-400`}>{profile.admissionStatus.replace('_', ' ')}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Quick Stats */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-700">
+                        
+                        {/* Highlights */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {[
-                                { label: 'Deadline', val: 'Jan 15', sub: 'Priority Admission' },
-                                { label: 'Progress', val: `${Math.round((completedCount/docs.length)*100)}%`, sub: 'Files Received' },
-                                { label: 'Decision', val: 'Mar 31', sub: 'Final Notification' }
-                            ].map((s, i) => (
-                                <div key={i} className="glass-card p-6 text-center border-b-4 border-blue-500/20 hover:border-blue-500 transition-colors">
-                                    <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mb-2">{s.label}</p>
-                                    <p className="text-3xl font-black font-[Outfit] text-white">{s.val}</p>
-                                    <p className="text-[10px] font-medium text-blue-400/60 mt-2 uppercase">{s.sub}</p>
+                                { label: 'Live Status', value: profile.admissionStatus.replace('_', ' '), border: 'bg-emerald-500', icon: Activity },
+                                { label: 'Documents', value: `${completedCount} / ${docs.length}`, border: 'bg-brand-primary', icon: FilePlus },
+                                { label: 'Deadline', value: 'Jan 15, 2026', border: 'bg-amber-500', icon: Clock }
+                            ].map((stat, i) => (
+                                <div key={i} className="card-base p-8 text-center space-y-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-brand-primary/30 dark:hover:border-brand-secondary/30 transition-all shadow-sm">
+                                    <div className="w-12 h-12 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center mx-auto mb-2">
+                                        <stat.icon className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                                    </div>
+                                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                                    <p className="text-2xl font-bold text-slate-900 dark:text-white capitalize">{stat.value}</p>
+                                    <div className={`h-1 w-8 mx-auto rounded-full ${stat.border}`} />
                                 </div>
                             ))}
                         </div>
 
                         {/* Checklist */}
-                        <div className="glass-card overflow-hidden shadow-2xl">
-                            <div className="px-8 py-6 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
-                                <div>
-                                    <h3 className="font-black text-white text-xl font-[Outfit]">Documentation Checklist</h3>
-                                    <p className="text-white/30 text-xs mt-1">Official University Document Verification Status</p>
+                        <div className="card-base overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                            <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6 bg-slate-50 dark:bg-slate-950/50">
+                                <div className="space-y-1 text-center md:text-left">
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Fulfillment Center</h3>
+                                    <p className="text-slate-600 dark:text-slate-400 text-sm">Manage and track your required verification documents.</p>
                                 </div>
-                                <div className="text-right">
-                                    <span className="text-[10px] font-black px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-tighter">
-                                        {completedCount} of {docs.length} Filed
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="px-8 py-5">
-                                <div className="h-2 rounded-full bg-white/5 overflow-hidden border border-white/5">
-                                    <div className="h-full rounded-full transition-all duration-1000 ease-out" 
-                                        style={{ width: `${(completedCount / (docs.length || 1)) * 100}%`, background: 'linear-gradient(90deg,#2563eb,#9333ea)' }} />
+                                <div className="text-center md:text-right">
+                                    <div className="text-4xl font-bold text-brand-primary dark:text-brand-secondary tabular-nums">{progress}%</div>
+                                    <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-1">Progress</div>
                                 </div>
                             </div>
+                            
+                            <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 relative">
+                                <div 
+                                    className="h-full bg-gradient-to-r from-brand-primary to-brand-secondary transition-all duration-1000 ease-out"
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
 
-                            <ul className="px-8 pb-8 space-y-4">
+                            <div className="p-8 space-y-4">
                                 {docs.map((doc, i) => (
-                                    <li key={i} className={`flex items-center gap-5 p-4 rounded-2xl transition-all group ${doc.status === 'received' ? 'bg-emerald-500/[0.03] border border-emerald-500/10' : 'bg-white/[0.02] border border-white/5 opacity-50'}`}>
-                                        <div className={`p-2 rounded-xl ${doc.status === 'received' ? 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-white/5 text-white/20'}`}>
-                                            {doc.status === 'received' ? <CheckCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                                    <div key={i} className={`flex items-center gap-6 p-6 rounded-2xl border transition-all ${doc.status === 'received' ? 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800/50' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-brand-primary/20'}`}>
+                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${doc.status === 'received' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500'}`}>
+                                            {doc.status === 'received' ? <CheckCircle className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
                                         </div>
                                         <div className="flex-1">
-                                            <span className={`text-sm font-bold tracking-tight ${doc.status === 'received' ? 'text-white' : 'text-white/40'}`}>{doc.name}</span>
-                                            <p className="text-[10px] text-white/20 uppercase font-black mt-0.5">{doc.status === 'received' ? 'Verification Complete' : 'Awaiting Submission'}</p>
+                                            <p className={`text-base font-semibold ${doc.status === 'received' ? 'text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-300'}`}>{doc.name}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <div className={`w-1.5 h-1.5 rounded-full ${doc.status === 'received' ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                                                    {doc.status === 'received' ? 'Verified' : 'Pending'}
+                                                </p>
+                                            </div>
                                         </div>
-                                        {doc.status === 'received' ? (
-                                            <div className="text-emerald-400/60 font-black text-[10px] uppercase tracking-widest hidden sm:block">Verified ✓</div>
-                                        ) : (
-                                            <button className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest hover:text-blue-400 transition-colors">Upload Now →</button>
+                                        {doc.status !== 'received' && (
+                                            <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:border-brand-primary dark:hover:border-brand-secondary hover:text-brand-primary dark:hover:text-brand-secondary transition-colors shadow-sm">
+                                                Upload <Download className="w-3.5 h-3.5" />
+                                            </button>
                                         )}
-                                    </li>
+                                    </div>
                                 ))}
-                            </ul>
+                            </div>
 
-                            <div className="px-8 py-6 bg-white/[0.01] border-t border-white/5 flex flex-col sm:flex-row items-center gap-4">
-                                <button onClick={handleDiscuss} className="w-full sm:w-auto btn-primary text-xs gap-2 px-6">
-                                    <MessageSquare className="w-4 h-4" /> Discuss with Admission AI
+                            <div className="p-8 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-xl shadow-sm flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                                        <Bot className="w-6 h-6 text-brand-primary dark:text-brand-secondary" />
+                                    </div>
+                                    <div className="space-y-0.5 text-center md:text-left">
+                                        <p className="text-slate-900 dark:text-white font-bold">Need assistance?</p>
+                                        <p className="text-slate-600 dark:text-slate-400 text-xs">Ask AI for documentation requirements.</p>
+                                    </div>
+                                </div>
+                                <button onClick={handleDiscuss} className="btn-primary w-full md:w-auto px-6 py-3 text-sm">
+                                    <MessageSquare className="w-4 h-4 mr-2" />
+                                    Help Desk AI
                                 </button>
-                                <p className="text-[10px] text-white/20 font-medium italic">Missing a document? The AI can help explain alternative proof requirements.</p>
                             </div>
                         </div>
+
                     </div>
                 )}
+
             </div>
         </div>
     );

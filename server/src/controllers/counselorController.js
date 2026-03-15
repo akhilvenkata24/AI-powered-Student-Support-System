@@ -1,67 +1,78 @@
+﻿const User = require('../models/User');
 const { OpenAI } = require('openai');
-const axios = require('axios');
-const Replicate = require('replicate');
 const { sendSuccess } = require('../utils/apiResponse');
-const fs = require('fs');
-const path = require('path');
 
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN,
-});
+const withTimeout = async (promise, ms, label) => {
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    });
+    try {
+        return await Promise.race([promise, timeoutPromise]);
+    } finally {
+        clearTimeout(timeoutId);
+    }
+};
 
 const askCounselor = async (req, res, next) => {
     try {
-        const { question } = req.body;
+        const { question, studentId } = req.body;
 
         if (!question) {
             return res.status(400).json({ success: false, error: 'Question is required' });
         }
 
-        // 1. Generate text response using Groq/OpenAI
-        const aiResponseText = await generateCounselorResponse(question);
-
-        // 2. Generate Audio via Google TTS (Free alternative due to ElevenLabs payment required error)
-        const googleTTS = require('google-tts-api');
-        
-        // Google TTS returns base64 directly
-        const audioBase64Raw = await googleTTS.getAudioBase64(aiResponseText, {
-            lang: 'en',
-            slow: false,
-            host: 'https://translate.google.com',
-        });
-        
-        const audioBase64 = `data:audio/mp3;base64,${audioBase64Raw}`;
-
-        // 3. Read the avatar image from client/public/avatar.png
-        const avatarPath = path.join(__dirname, '../../../../client/public/avatar.png');
-        let imageBase64;
-        
-        if (fs.existsSync(avatarPath)) {
-            const imageBuffer = fs.readFileSync(avatarPath);
-            imageBase64 = `data:image/png;base64,${imageBuffer.toString('base64')}`;
-        } else {
-            // Fallback to a placeholder URL if the user hasn't placed their image yet
-            imageBase64 = "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400";
+        if (!studentId) {
+            return res.status(400).json({ success: false, error: 'Student ID is required' });
         }
 
-        // 4. Generate Video via SadTalker (Local Python Flask Server)
-        let videoOutput = null;
+        const normalizedId = studentId.trim().toUpperCase();
+        const user = await User.findOne({ externalId: normalizedId });
+
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'Student ID not found.' });
+        }
+
+        // 1. Generate text response (60s - user is ok with delay, must succeed)
+        let aiResponseText;
         try {
-            // We assume the local Python API is running on port 5001
-            const flaskRes = await axios.post('http://localhost:5001/api/render', {
-                image: imageBase64,
-                audio: audioBase64
-            });
-            videoOutput = flaskRes.data.videoUrl;
-        } catch (apiError) {
-            console.warn("Local SadTalker API failed. Ensure python server is running on 5001.", apiError.message);
-            // We will just fall back to Audio Only on the frontend 
+            aiResponseText = await withTimeout(
+                generateCounselorResponse(question),
+                60000,
+                'LLM response'
+            );
+        } catch (err) {
+            console.warn('LLM timeout/failure, using fallback response:', err.message);
+            aiResponseText = "I hear you. Take a slow breath with me - you are not alone in this.";
+        }
+
+        // 2. Generate TTS audio via Google TTS (60s - must complete at any cost)
+        const googleTTS = require('google-tts-api');
+        let audioBase64 = null;
+        try {
+            let textToSpeak = aiResponseText;
+            if (textToSpeak.length > 195) {
+                const cutoff = textToSpeak.lastIndexOf(' ', 195);
+                textToSpeak = (cutoff > 0 ? textToSpeak.slice(0, cutoff) : textToSpeak.slice(0, 195)) + '.';
+            }
+            const audioBase64Raw = await withTimeout(
+                googleTTS.getAudioBase64(textToSpeak, {
+                    lang: 'en',
+                    slow: false,
+                    host: 'https://translate.google.com',
+                }),
+                60000,
+                'TTS generation'
+            );
+            audioBase64 = `data:audio/mp3;base64,${audioBase64Raw}`;
+        } catch (err) {
+            console.warn('TTS failure:', err.message);
         }
 
         sendSuccess(res, {
             text: aiResponseText,
-            videoUrl: videoOutput,
-            audioUrl: audioBase64 // Always send the audio track just in case
+            audioUrl: audioBase64,
+            videoUrl: null
         });
 
     } catch (error) {
@@ -84,12 +95,12 @@ const generateCounselorResponse = async (question) => {
         messages: [
             {
                 role: "system",
-                content: `You are a polite, helpful student counseling assistant. You answer questions about counseling slot booking, the admission process, required documents, and academic guidance. Keep your responses short, conversational, and direct. Maximum length: 1-2 short sentences.`
+                content: "You are a calm and empathetic student mental-health support assistant. Respond ONLY to mental health, emotional wellbeing, stress, anxiety, burnout, loneliness, motivation, self-care, coping, and seeking help. If asked about anything unrelated, gently redirect to mental-health support. Keep replies very short, warm, and conversational - maximum 2 short sentences. If the user mentions self-harm or immediate danger, strongly encourage contacting emergency services and a trusted person."
             },
             { role: "user", content: question }
         ],
         temperature: 0.7,
-        max_tokens: 100,
+        max_tokens: 80,
     });
     return response.choices[0].message.content;
 };

@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const ADMIN_TOKEN_STORAGE_KEY = 'campus_admin_token';
 
 const api = axios.create({
     baseURL: API_URL,
@@ -8,6 +9,26 @@ const api = axios.create({
         'Content-Type': 'application/json',
     },
 });
+
+api.interceptors.request.use((config) => {
+    const adminToken = localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
+    if (adminToken) {
+        config.headers.Authorization = `Bearer ${adminToken}`;
+    }
+    return config;
+});
+
+export const setAdminToken = (token) => {
+    if (token) {
+        localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, token);
+    } else {
+        localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+    }
+};
+
+export const getAdminToken = () => localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
+
+export const clearAdminToken = () => localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
 
 export const sendChatMessage = async (question, language = 'English') => {
     try {
