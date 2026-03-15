@@ -7,6 +7,7 @@ const MessageInput = ({ onSendMessage, isLoading }) => {
     const [speechSupported, setSpeechSupported] = useState(true);
     const textareaRef = useRef(null);
     const recognitionRef = useRef(null);
+    const dictationBaseRef = useRef("");
 
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -30,14 +31,14 @@ const MessageInput = ({ onSendMessage, isLoading }) => {
                 else interimText += transcript;
             }
 
-            const merged = `${finalText}${interimText}`.trim();
-            if (merged) {
-                setMessage((prev) => {
-                    const base = prev.trim();
-                    if (!base) return merged;
-                    return `${base} ${merged}`;
-                });
+            const merged = `${finalText} ${interimText}`.replace(/\s+/g, " ").trim();
+            const base = dictationBaseRef.current.trim();
+            if (!merged) {
+                setMessage(base);
+                return;
             }
+
+            setMessage(base ? `${base} ${merged}` : merged);
         };
 
         recognition.onend = () => {
@@ -68,6 +69,7 @@ const MessageInput = ({ onSendMessage, isLoading }) => {
         if (message.trim() && !isLoading) {
             onSendMessage(message);
             setMessage("");
+            dictationBaseRef.current = "";
         }
     };
 
@@ -86,6 +88,7 @@ const MessageInput = ({ onSendMessage, isLoading }) => {
         }
 
         try {
+            dictationBaseRef.current = message.trim();
             recognitionRef.current?.start();
             setIsListening(true);
         } catch {
@@ -117,7 +120,12 @@ const MessageInput = ({ onSendMessage, isLoading }) => {
                     ref={textareaRef}
                     rows="1"
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={(e) => {
+                        setMessage(e.target.value);
+                        if (!isListening) {
+                            dictationBaseRef.current = e.target.value;
+                        }
+                    }}
                     onKeyDown={handleKeyDown}
                     placeholder="Type your question here..."
                     className="w-full bg-transparent border-none focus:ring-0 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 py-3 resize-none max-h-40 font-medium text-sm scrollbar-hide outline-none"
