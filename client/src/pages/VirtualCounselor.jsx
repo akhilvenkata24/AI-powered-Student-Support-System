@@ -219,7 +219,6 @@ const VirtualCounselor = () => {
             responseAudioRef.current.src = '';
         }
         pendingAudioRef.current = null;
-        setHasEnteredRoom(false);
         setIsDoorOpening(false);
         setIsListening(false);
         setTranscript('');
@@ -227,10 +226,7 @@ const VirtualCounselor = () => {
         setError('');
         setIsAudioPlaying(false);
         setAudioBlocked(false);
-        setVerifyError('');
-        setProfile(null);
-        setChatHistory(DEFAULT_CHAT_HISTORY);
-        localStorage.removeItem(VIRTUAL_COUNSELOR_SESSION_KEY);
+        setChatHistory([]);
 
         const videoEl = loopVideoRef.current;
         if (videoEl) {
@@ -256,12 +252,12 @@ const VirtualCounselor = () => {
                     <div className="absolute inset-0 bg-slate-50/50 dark:bg-slate-950/50 -z-20" />
                     
                     {/* Left Door */}
-                    <div className={`absolute top-0 left-0 w-1/2 h-full bg-slate-50 dark:bg-slate-900 z-20 transition-transform duration-[1200ms] ease-in-out border-r border-slate-200 dark:border-slate-800 flex items-center justify-end pr-8 md:pr-48 ${isDoorOpening ? '-translate-x-full shadow-2xl' : ''}`}>
+                    <div className={`absolute top-0 left-0 w-1/2 h-full bg-slate-50 dark:bg-slate-900 z-20 transition-transform duration-[1200ms] ease-in-out flex items-center justify-end pr-8 md:pr-48 ${isDoorOpening ? '-translate-x-full shadow-2xl' : ''}`}>
                          <div className="w-1 md:w-1.5 h-24 md:h-32 bg-slate-200 dark:bg-slate-700 rounded-full shadow-inner" />
                     </div>
 
                     {/* Right Door */}
-                    <div className={`absolute top-0 right-0 w-1/2 h-full bg-slate-50 dark:bg-slate-900 z-20 transition-transform duration-[1200ms] ease-in-out border-l border-slate-200 dark:border-slate-800 flex items-center justify-start pl-8 md:pl-48 ${isDoorOpening ? 'translate-x-full shadow-2xl' : ''}`}>
+                    <div className={`absolute top-0 right-0 w-1/2 h-full bg-slate-50 dark:bg-slate-900 z-20 transition-transform duration-[1200ms] ease-in-out flex items-center justify-start pl-8 md:pl-48 ${isDoorOpening ? 'translate-x-full shadow-2xl' : ''}`}>
                          <div className="w-1 md:w-1.5 h-24 md:h-32 bg-slate-200 dark:bg-slate-700 rounded-full shadow-inner" />
                     </div>
 
@@ -379,7 +375,7 @@ const VirtualCounselor = () => {
             </div>
 
             {/* Transcription & Controls Sidebar */}
-            <div className="w-full lg:w-[400px] flex flex-col gap-4">
+            <div className="w-full lg:w-[460px] flex flex-col h-full">
                 <div className="card-base flex-1 flex flex-col overflow-hidden bg-white dark:bg-slate-900">
                     <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950/50">
                         <div className="flex items-center gap-3">
@@ -408,31 +404,21 @@ const VirtualCounselor = () => {
                         <div ref={chatEndRef} />
                     </div>
 
-                    <div className="p-5 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
-                        <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 flex items-center gap-3">
-                            <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Encrypted Node</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Audio and logs are private.</p>
-                            </div>
-                        </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+                        <button 
+                            onClick={() => setHasEnteredRoom(false)}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 py-3.5 rounded-xl font-semibold shadow-sm transition-colors"
+                        >
+                            End Session
+                        </button>
+                        <button 
+                            onClick={handleResetSession}
+                            className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 py-3.5 rounded-xl font-semibold shadow-sm transition-colors"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            Reset Session
+                        </button>
                     </div>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button 
-                        onClick={() => setHasEnteredRoom(false)}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 py-4 rounded-xl font-semibold shadow-sm transition-colors"
-                    >
-                        End Session
-                    </button>
-                    <button 
-                        onClick={handleResetSession}
-                        className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 py-4 rounded-xl font-semibold shadow-sm transition-colors"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                        Reset Session
-                    </button>
                 </div>
             </div>
         </div>
